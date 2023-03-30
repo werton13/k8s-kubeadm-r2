@@ -1,0 +1,64 @@
+---
+# under construction
+# download required Ansible roles
+#- hosts: dvm
+#  tasks:
+#    - name: Install collections and roles from requirements.yml file
+#      local_action: command ansible-galaxy install -r requirements.yml -p roles/
+#      tags: helm_install
+#  roles: helm-install 
+
+
+- hosts: masters:workers
+  gather_facts: true
+  become: yes
+  vars_files:
+  #  - ./vars/base_vars.yaml
+  roles:
+    - prepare_k8s_nodes
+
+# install Helm on master nodes
+- hosts: masters
+  gather_facts: true
+  become: yes
+  roles:
+    - role: geerlingguy.helm
+      helm_version: 'v3.11.1'
+
+# install K8s binaries
+- hosts: masters:workers
+  gather_facts: true
+  become: yes
+  roles:
+    - install_k8s_binaries
+    
+  post_tasks:
+    - name: check required K8s binaries was installed on every host
+      ansible.builtin.include_tasks: check_k8s_binaries_install_state.yaml 
+
+- hosts: workers
+  gather_facts: true
+  become: yes
+  roles:
+    - k8s_rbac_cluster_role_manifests
+
+- hosts: masters[0]
+  gather_facts: true
+  become: yes
+  vars_files:
+    - ./vars/base_vars.yaml
+  roles:
+    - bootstrap_k8s_cluster # create a new K8s cluster, join additional master and worker nodes
+    - deploy_k8s_cni        # add and configure K8s CNI components
+    - deploy_k8s_csi        # add and configure K8s CSI components - can be vcloud or vsphere
+    - categorize_k8s_nodes  # label, taint and cordon nodes depend on their purpose
+    - k8s_addons_monitoring # add and configure K8s monitoring components
+    - k8s_addons_metrics    # add K8s metrics components
+    - k8s_addons_ingress    # add K8s ingress components and create basic ingress resources
+    - k8s_rbac_certs
+    - k8s_rbac_kubeconfigs
+    - k8s_rbac_main           # add K8s RBAC components
+
+# configure management evironment on DVM
+# configure backup etcd task
+#- import_playbook: ./cleanup_finalize.yaml

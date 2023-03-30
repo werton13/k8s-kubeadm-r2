@@ -1,0 +1,14 @@
+    - name: Check all hosts contain /dev/sdb, /dev/sdc
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /dev/sdb
+        - /dev/sdc
+      register: st
+      until: st.stat.exists == true
+      retries: 150
+      delay: 10
+
+    - name: All disks checks passed, starting configure volumes
+      debug:
+        msg: "Assuming all additional disks attached to vms"

@@ -1,0 +1,2 @@
+- import_playbook: ../vsphere_csi/vsphere_cpi.yaml
+- import_playbook: ../vsphere_csi/vsphere_csi.yaml

@@ -1,0 +1,34 @@
+# code: language=ansible
+---
+# run on all hosts except first master - which is control node, need to add additional task to process first master 
+#- hosts: masters:workers #masters[1:]:workers
+#  become: false
+#  gather_facts: false
+#  tasks:
+
+# run on all hosts except first master - which is control node, need to add additional task to process first master 
+- name: "Configure LVMs, FSes and mount them"
+  hosts: masters:workers #masters[1:]:workers 
+  become: yes
+  vars:
+    configure_lvm_and_fs_storages:
+      - disk: sdb
+        vg_name: data1_vg
+        lvm_name: data1_lv
+        fs_type: ext4
+        mount_path: /data1
+      - disk: sdc
+        vg_name: data2_vg
+        lvm_name: data2_lv
+        fs_type: ext4
+        mount_path: /data2
+    move_system_dir_config:
+      - source: /var
+        dest: /data1
+        excludes:
+          - /lib
+      - source: /var/lib
+        dest: /data2
+  roles:
+    - configure_lvm_and_fs
+    - move_system_dir

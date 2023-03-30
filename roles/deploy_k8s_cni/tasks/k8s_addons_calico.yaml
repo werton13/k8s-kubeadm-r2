@@ -1,0 +1,70 @@
+---
+
+#- hosts: masters[0]
+#  gather_facts: true
+#  become: yes
+#  vars_files:
+#    - ./vars/base_vars.yaml
+#  tasks:
+    - name: create folders
+      file:
+        path: "/home/{{ os_admin_username }}/k8s_addons/calico"
+        state: directory
+        mode: '0644'
+
+    - name: Download Calico tigera operator manifest
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
+        dest: "/home/{{ os_admin_username }}/k8s_addons/calico"
+        mode: '0644'
+      tags: calico
+    
+    - name: create Calico configuration manifest
+      template:
+        src: ./templates/calico_config.yaml.j2
+        dest: "/home/{{ os_admin_username }}/k8s_addons/calico/calico_config.yaml"
+        mode: '0644'
+      tags: calico
+
+    - name: Download calicoctl
+      ansible.builtin.get_url:
+        url: "https://github.com/projectcalico/calico/releases/download/{{ calico_version }}/calicoctl-linux-amd64"
+        dest: "/usr/local/bin/calicoctl"
+        mode: '0755'
+      tags: calicoctl
+
+
+#    - name: Apply Calico manifests
+#      kubernetes.core.k8s:
+#        kubeconfig: "/etc/kubernetes/admin.conf"
+#        state: present
+#        src: "{{ item }}"
+#      loop:
+#        - "/home/{{ os_admin_username }}/k8s_addons/calico/tigera-operator.yaml"
+#        - "/home/{{ os_admin_username }}/k8s_addons/calico/calico_config.yaml"
+
+    - name: Apply Tigera operator manifest
+      kubernetes.core.k8s:
+        kubeconfig: "/etc/kubernetes/admin.conf"
+        state: present
+        src: "/home/{{ os_admin_username }}/k8s_addons/calico/tigera-operator.yaml"
+    
+    - name: Wait till Tigera operator replicas be greater than 0
+      shell: | 
+        kubectl --kubeconfig=/etc/kubernetes/admin.conf -n tigera-operator get deployment tigera-operator -o jsonpath='{.status.availableReplicas}'
+      register: tigera_replicas_available
+      until: tigera_replicas_available.stdout | int > 0
+      retries: 15
+      delay: 10
+      tags: wait_tigera
+
+    - name: Apply Calico config manifest
+      kubernetes.core.k8s:
+        kubeconfig: "/etc/kubernetes/admin.conf"
+        state: present
+        src: "/home/{{ os_admin_username }}/k8s_addons/calico/calico_config.yaml"
+
+    # kubectl --kubeconfig=/etc/kubernetes/admin.conf -n tigera-operator get deployment tigera-operator -o jsonpath='{.status.availableReplicas}'
+
+
+...

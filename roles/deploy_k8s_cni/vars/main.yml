@@ -1,0 +1,3 @@
+---
+# vars file for deploy_k8s_cni
+calico_ippools_cidr: "{{ k8s_pod_subnet }}"

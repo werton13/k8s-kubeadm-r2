@@ -1,0 +1,39 @@
+---
+# here we rebboting nodes and wait till all of them become available via SSH
+- name: STAGE_[ 1.1 of 11 ] --- reboot nodes before additional disk's configuration
+  include_tasks: reboot_hosts_before_disks_remap.yaml
+
+- name: STAGE_ --- wait till all nodes report they have attached required disks
+  include_tasks: check_disks_attached.yaml
+
+  # here we checking till all hosts contain /dev/sdb, /dev/sdc - it is mean additional disk's have been attached and ready for processing
+- name: STAGE_[ 1.2 of 11 ]---configure  LVM volumes, mount points
+  include_role: #prepare_hosts_disks.yaml
+    name: configure_lvm_and_fs
+  vars:
+    configure_lvm_and_fs_storages:
+      - disk: sdb
+        vg_name: data1_vg
+        lvm_name: data1_lv
+        fs_type: ext4
+        mount_path: /data1
+      - disk: sdc
+        vg_name: data2_vg
+        lvm_name: data2_lv
+        fs_type: ext4
+        mount_path: /data2
+
+- name: STAGE_[ 1.2 of 11 ]---move system dirs on prepared volumes
+  include_role:
+    name: move_system_dir
+  vars:
+      move_system_dir_config:
+      - source: /var
+        dest: /data1
+        excludes:
+          - /lib
+      - source: /var/lib
+        dest: /data2
+
+- name: STAGE_[ 1.3 of 11 ]---prepare OS system configuration and install prerequirements for installing K8s components
+  include_tasks: prepare_hosts.yaml

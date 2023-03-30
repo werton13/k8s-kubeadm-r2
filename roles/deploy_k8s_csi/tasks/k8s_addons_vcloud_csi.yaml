@@ -1,0 +1,3 @@
+#- import_playbook: ./vcloud_csi/vcloud_csi.yaml
+- name: include tasks for installing CSI driver for vcloud
+  include_tasks: ./vcloud_csi/vcloud_csi.yaml
