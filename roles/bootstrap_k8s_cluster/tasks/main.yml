@@ -1,0 +1,5 @@
+---
+# tasks file for bootstrap_k8s_cluster
+# 
+- name: STAGE_[ 4.1 of 11 ] --- create Kubernetes cluster
+  include_tasks: bootstrap_k8s_cluster.yaml

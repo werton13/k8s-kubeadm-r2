@@ -1,0 +1,70 @@
+---
+#- hosts: masters[0]
+#  gather_facts: true
+#  become: yes
+#  vars_files:
+#    - ../vars/base_vars.yaml
+#  tasks:
+    - name: create folder for vcloud CSI
+      file:
+        path: "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi"
+        state: directory
+        mode: '0644'
+#?    # Before installing the vSphere Container Storage Plug-in in your generic Kubernetes environment, create the vmware-system-csi namespace.
+#?    - name: create the vmware-system-csi namespace
+#?      kubernetes.core.k8s:
+#?        kubeconfig: "/etc/kubernetes/admin.conf"
+#?        name: vmware-system-csi
+#?        api_version: v1
+#?        kind: Namespace
+#?        state: present
+  
+
+  # Create a Kubernetes Secret for vcloud Container Storage Plug-in
+      # create vcloud-csi secret from a template
+    - name: create vcloud-csi secret manifest file from  template
+      template:
+        src: ../templates/vcloud-basic-auth.yaml.j2
+        dest: "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi/vcloud-basic-auth.yaml"
+        mode: '0644'
+
+    - name: create vcloud-csi config manifest file from  template
+      template:
+        src: ../templates/vcloud-csi-config.yaml.j2
+        dest: "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi/vcloud-csi-config.yaml"
+        mode: '0644'
+
+    - name: copy vcloud-csi manifests to vcloud_csi folder
+      copy:
+        src: "../files/{{ item }}"
+        dest: "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi/{{ item }}"
+        mode: '0644'
+      loop:
+        - csi-controller.yaml
+        - csi-driver.yaml
+        - csi-node.yaml
+  # create storage class manifest
+    - name: create storage class manifest from  template
+      template:
+        src: ../templates/storage_class_vcloud.yaml.j2
+        dest: "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi/storage_class.yaml"
+        mode: '0644'     
+  # apply vSphere Container Storage Plug-in manifests
+    - name: Deploy vcloud Container Storage Plug-in.
+      kubernetes.core.k8s:
+        kubeconfig: "/etc/kubernetes/admin.conf"
+        state: present
+        src: "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi/{{ item }}"
+#        definition: "{{ lookup('template', '{{ item }}') }}"
+#      with_fileglob:
+#        - "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi/*.yaml"
+      loop:
+        - csi-controller.yaml
+        - csi-driver.yaml
+        - csi-node.yaml
+        - vcloud-basic-auth.yaml
+        - vcloud-csi-config.yaml
+        - storage_class.yaml
+      tags: apply_csi_manifests
+
+        

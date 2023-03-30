@@ -1,0 +1,12 @@
+---
+# tasks file for wait_nodes
+tasks:
+  - name: Waiting till all master and worker nodes be available via SSH, check each 10
+    wait_for:
+      host: "{{ item }}"
+      port: 22
+      sleep: 10
+      delay: 10
+      timeout: 600
+    loop: "{{ groups.masters + groups.workers }}"
+    connection: local

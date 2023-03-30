@@ -1,0 +1,15 @@
+# RoleBinding to grant full access permissions inside
+# a tenant namespace for a for a tenant admin
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: "{{ tenant_ns_default }}-admin"
+  namespace: "{{ tenant_ns_default }}"
+subjects:
+- kind: User
+  name: {{ tenant_k8s_admin_username  }} 
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole # this must be Role or ClusterRole
+  name: admin # Default ClusterRole
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,5 @@
+---
+# tasks file for install_k8s_binaries
+# 
+- name: STAGE_[ 3.1 of 11 ] --- install Kubernetes binaries
+  include_tasks: install_k8s_binaries.yaml
