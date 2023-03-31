@@ -51,3 +51,34 @@ dashboards:
       gnetId: 2
       revision: 2
       datasource: 'Prometheus'
+    kubernetes-monitoring-overview:
+      gnetId: 14623
+      revision: 1
+      datasource: 'Prometheus'
+  advanced_dashboards:
+    KubernetesGlobalView:
+      gnetId: 15757
+      revision: 22
+      datasource: 'Prometheus'
+    KubernetesNamespaceView:
+      gnetId: 15758
+      revision: 15
+      datasource: 'Prometheus'
+    KubernetesNodesView:
+      gnetId: 15759
+      revision: 15
+      datasource: 'Prometheus'
+    KubernetesPodsView:
+      gnetId: 15760
+      revision: 16
+      datasource: 'Prometheus'
+    KubernetesAPIServer:
+      gnetId: 15761
+      revision: 11
+      datasource: 'Prometheus'
+    KubernetesCoreDNS:
+      gnetId: 15762
+      revision: 11
+      datasource: 'Prometheus'
+      
+
