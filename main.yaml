@@ -8,7 +8,6 @@
 #      tags: helm_install
 #  roles: helm-install 
 
-
 - hosts: masters:workers
   gather_facts: true
   become: yes
@@ -16,6 +15,13 @@
   #  - ./vars/base_vars.yaml
   roles:
     - prepare_k8s_nodes
+
+- hosts: dvm:masters
+  gather_facts: true
+  become: yes
+  pre_tasks:
+    - name: download role for helm from Ansible Galaxy
+      command: ansible-galaxy install -r requirements.yml -p roles/
 
 # install Helm on master nodes
 - hosts: masters
