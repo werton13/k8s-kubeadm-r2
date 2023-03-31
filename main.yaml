@@ -1,13 +1,4 @@
 ---
-# under construction
-# download required Ansible roles
-#- hosts: dvm
-#  tasks:
-#    - name: Install collections and roles from requirements.yml file
-#      local_action: command ansible-galaxy install -r requirements.yml -p roles/
-#      tags: helm_install
-#  roles: helm-install 
-
 - hosts: masters:workers
   gather_facts: true
   become: yes
@@ -16,15 +7,15 @@
   roles:
     - prepare_k8s_nodes
 
-- hosts: dvm:masters
-  gather_facts: true
-  become: yes
-  pre_tasks:
-    - name: download role for helm from Ansible Galaxy
-      command: ansible-galaxy install -r requirements.yml -p roles/
+#- hosts: dvm:masters
+#  gather_facts: true
+#  become: yes
+#  pre_tasks:
+#    - name: download role for helm from Ansible Galaxy
+#      command: ansible-galaxy install -r requirements.yml -p roles/
 
 # install Helm on master nodes
-- hosts: masters
+- hosts: dvm:masters
   gather_facts: true
   become: yes
   roles:
