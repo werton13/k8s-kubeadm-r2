@@ -55,7 +55,6 @@ dashboards:
       gnetId: 14623
       revision: 1
       datasource: 'Prometheus'
-  advanced_dashboards:
     KubernetesGlobalView:
       gnetId: 15757
       revision: 22
