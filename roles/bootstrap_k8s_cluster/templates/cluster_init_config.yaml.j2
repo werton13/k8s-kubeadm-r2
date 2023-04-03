@@ -10,6 +10,7 @@ apiServer:
     - {{ master0_ip }}
     - {{ master1_ip }}
     - {{ master2_ip }}
+    - {{ k8s_controlPlane_Endpoint }}
   extraArgs:
     service-cluster-ip-range: {{ k8s_service_subnet }}  #10.96.0.0/12
 #    advertise-address: {{ k8s_controlPlane_Endpoint }} #10.99.120.79
