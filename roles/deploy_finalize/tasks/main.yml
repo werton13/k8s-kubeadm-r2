@@ -1,2 +1,4 @@
 ---
 # tasks file for deploy_finalize
+- name: STAGE_[ 16 of 18 ] --- DEPLOYMENT FINALISATION
+  include_tasks: cleanup_finalize.yaml

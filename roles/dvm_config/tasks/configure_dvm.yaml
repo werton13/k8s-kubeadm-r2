@@ -1,0 +1,108 @@
+---
+  - name: "STAGE_[ 15.1 of 18 ] DVM host - create folders for local scripts"
+    file:
+      path: "/home/{{ os_admin_username }}/{{ item  }}"
+      state: directory
+      owner: "{{ os_admin_username }}"
+    loop:
+      - .scripts
+      - .kube
+      - tenant_kubeconfigs
+      - deployment_log
+    tags: make_dvm_folders
+
+  - name: "STAGE_[ 15.2 of 18 ] DVM  host - download the Google Cloud public signing key"
+    ansible.builtin.get_url:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      dest: /etc/apt/keyrings/kubernetes-archive-keyring.gpg 
+      mode: '0644'
+    register: dnl_state
+    until: dnl_state.failed == false
+    retries: 100
+    delay: 10
+    tags: repoad        
+  
+  - name: "STAGE_[ 15.3 of 18 ] --- DVM host - add the Kubernetes apt repository"
+    ansible.builtin.apt_repository:
+      repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+      filename: kubernetes
+      update_cache: true
+    tags:
+      - repoadd
+  
+  - name: "STAGE_[ 15.4 of 18 ] --- DVM host - update apt and install kubeadm & kubectl"
+    ansible.builtin.apt:
+      update_cache: yes
+      name: "{{ item }}"
+      state: present
+      allow_downgrade: yes
+    loop:
+      - "kubectl={{ k8s_ver }}"
+      - "kubeadm={{ k8s_ver }}"
+    tags: kube_bin_install
+
+  - name: "STAGE_[ 15.5 of 18 ] --- DVM host - make kubectl autocompletion"
+    ansible.builtin.shell: kubectl completion bash | tee /etc/bash_completion.d/kubectl > /dev/null
+
+  - name: "STAGE_[ 15.6 of 18] --- DVM host -  make kubeadm autocompletion"
+    ansible.builtin.shell: kubeadm completion bash | tee /etc/bash_completion.d/kubeadm > /dev/null
+    #changed_when: false
+  
+  - name: "STAGE_[ 15.7 of 18 ] --- DVM host -  install kube-ps1 to configure Kubernetes prompt for bash"
+    ansible.builtin.git:
+      repo: https://github.com/jonmosco/kube-ps1.git
+      dest: "/home/{{ os_admin_username }}/.scripts/kube-ps1/"
+
+  - name: "STAGE_[ 15.8 of 18 ] --- DVM host - copy preconfigured bashrc file"
+    template:
+      src: ./templates/.bashrc.j2
+      dest: "/home/{{ os_admin_username }}/.bashrc"
+
+  - name: "STAGE_[ 15.9 of 18 ] --- DVM host - install kubectl addons - kubectx,kubens"
+    ansible.builtin.git:
+      repo: https://github.com/ahmetb/kubectx
+      dest: /opt/kubectx
+
+  - name: "STAGE_[ 15.10 of 18 ] --- DVM host - create links for kubectx and kubens"
+    file:
+      src:  "/opt/kubectx/{{ item }}"
+      dest: "/usr/local/bin/{{ item }}"
+      state: link
+    loop:
+      - kubectx
+      - kubens
+
+  - name: "STAGE_[ 15.11 of 18 ] --- DVM host - get kubeconfig from master[0]"
+    slurp:
+      src: /etc/kubernetes/admin.conf
+    register: kubeconfig
+    tags: get_kubeconfig
+    delegate_to: "{{ groups.masters[0] }}"
+    tags: get_kubeconfig
+    
+  - name: "STAGE_[ 15.12 of 18 ] ---DVM host - write kubeconfig to .kube/config file"
+    copy:
+      dest: "/home/{{ os_admin_username }}/.kube/config"
+      owner: "{{ os_admin_username }}"
+      content: |
+         {{ kubeconfig.content | b64decode }}
+    tags: get_kubeconfig 
+  
+  - name: "STAGE_[ 15.13 of 18 ] ---DVM host - get tenant kubeconfigs file's from masters[0]"
+    fetch:
+      src: "/home/{{ os_admin_username }}/k8s_addons/pki/{{ item }}"
+      dest: "/home/{{ os_admin_username }}/tenant_kubeconfigs/{{ item }}"
+      flat: true
+    loop:
+      - "{{ tenant_k8s_admin_username }}-config"
+    delegate_to: "{{ groups.masters[0] }}"
+  
+  - name: "STAGE_[ 15.14 of 18 ] ---DVM host - ansible deployment log from masters[0]"
+    fetch:
+      src:  /root/ansible.log 
+      dest: "/home/{{ os_admin_username }}/deployment_log/ansible.log"
+      flat: true
+    delegate_to: "{{ groups.masters[0] }}"
+
+    

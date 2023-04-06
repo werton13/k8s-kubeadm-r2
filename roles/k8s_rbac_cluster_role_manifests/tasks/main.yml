@@ -1,26 +1,22 @@
 ---
-# tasks file for k8s_rbac_cluster_role_manifests
-#- hosts: workers 
-#  become: yes
-#  gather_facts: yes
-#  tasks:
-    - name: gather facts from workers to get their hostnames and put them into K8s clustrrole elements # if possible need to filter this
-      setup:
+
+  - name: "STAGE_[ 4.1 of 18 ] --- gather facts from workers to get their hostnames and put them into K8s clustrrole elements # if possible need to filter this"
+    setup:
+  
+  - name: "STAGE_[ 4.2 of 18 ] ---create folder for K8s RBAC manifests"
+    file:
+      path: "/home/{{ os_admin_username }}/k8s_addons/rbac"
+      state: directory
+      mode: '0644'
+    delegate_to: "{{ groups.masters[0] }}"
     
-    - name: create folder for K8s RBAC manifests
-      file:
-        path: "/home/{{ os_admin_username }}/k8s_addons/rbac"
-        state: directory
-        mode: '0644'
-      delegate_to: "{{ groups.masters[0] }}"
-      
-    # create manifests for two ClusterRoles
-    - name: create K8s ClusterRole's manifests from templates
-      template: 
-        src: "./templates/{{ item }}.j2"
-        dest: "/home/{{ os_admin_username }}/k8s_addons/rbac/{{ item }}"
-        mode: '0644'
-      loop:
-        - k8s_tenant_ro_clusterrole.yaml # ClusterRole with ability to view cluster-objects
-        - k8s_tenant_node_drain_clusterrole.yaml # ClusterRole with ability to perform cordon/uncordon worker nodes
-      delegate_to: "{{ groups.masters[0] }}"
+  # create manifests for two ClusterRoles
+  - name: "STAGE_[ 4.3 of 18 ] ---create K8s ClusterRole's manifests from templates"
+    template: 
+      src: "./templates/{{ item }}.j2"
+      dest: "/home/{{ os_admin_username }}/k8s_addons/rbac/{{ item }}"
+      mode: '0644'
+    loop:
+      - k8s_tenant_ro_clusterrole.yaml # ClusterRole with ability to view cluster-objects
+      - k8s_tenant_node_drain_clusterrole.yaml # ClusterRole with ability to perform cordon/uncordon worker nodes
+    delegate_to: "{{ groups.masters[0] }}"

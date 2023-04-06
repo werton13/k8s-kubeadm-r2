@@ -26,6 +26,7 @@ controllerManager:
 dns: {}
 
 kind: ClusterConfiguration
+clusterName: "{{ k8s_cluster_name }}"
 kubernetesVersion: {{ k8s_version_short }} #v1.24.0
 controlPlaneEndpoint: {{ k8s_controlPlane_Endpoint }}:6443
 networking:

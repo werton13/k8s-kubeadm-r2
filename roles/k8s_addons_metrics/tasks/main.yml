@@ -1,4 +1,4 @@
 ---
 # tasks file for k8s_addons_metrics
-- name: STAGE_[ 9 of 11 ] --- Add Kubernetes metrics server
+- name: STAGE_[ 10 of 18 ] --- Add Kubernetes metrics server
   include_tasks: k8s_addons_metrics.yaml

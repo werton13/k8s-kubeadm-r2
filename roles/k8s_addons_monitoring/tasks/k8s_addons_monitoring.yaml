@@ -1,17 +1,12 @@
 ---
-#- hosts: masters[0]
-#  gather_facts: true
-#  become: yes
-#  vars_files:
-#    - ./vars/base_vars.yaml
-#  tasks:
-    - name: create folder for  monitoring components manifests
+
+    - name: "STAGE_[ 9.1 of 18 ] --- create folder for  monitoring components manifests"
       file:
         path: "/home/{{ os_admin_username }}/k8s_addons/monitoring"
         state: directory
         mode: '0644'
     
-    - name: copy Prometheus and Grafana config files
+    - name: "STAGE_[ 9.2 of 18 ] --- copy Prometheus and Grafana config files"
       copy:
         src: "./files/{{ item }}"
         dest: "/home/{{ os_admin_username }}/k8s_addons/monitoring/{{ item }}"
@@ -20,32 +15,32 @@
         - grafana_values.yaml
         - prometheus_values.yaml  
 
-    - name: create alertmanager config from template
+    - name: "STAGE_[ 9.3 of 18 ] --- create alertmanager config from template"
       template:
         src: "./templates/alert_manager_config.yaml.j2"
         dest: "/home/{{ os_admin_username }}/k8s_addons/monitoring/alert_manager_config.yaml"
         mode: '0644'
       tags: alert_mgr_config
 
-    - name: merge alertmanager config file with prometheus_values file
+    - name: "STAGE_[ 9.4 of 18 ] --- merge alertmanager config file with prometheus_values file"
       shell: |
         cat "/home/{{ os_admin_username }}/k8s_addons/monitoring/prometheus_values.yaml" \
         "/home/{{ os_admin_username }}/k8s_addons/monitoring/alert_manager_config.yaml" \
         > "/home/{{ os_admin_username }}/k8s_addons/monitoring/prometheus_config.yaml"
       tags: merge_prometheus_config
 
-    - name: Add prometheus community Helm repo
+    - name: "STAGE_[ 9.5 of 18 ] --- Add prometheus community Helm repo"
       kubernetes.core.helm_repository:
         name: prometheus-community
         repo_url: "https://prometheus-community.github.io/helm-charts"
 
-    - name: Add Grafana community Helm repo
+    - name: "STAGE_[ 9.6 of 18 ] --- Add Grafana community Helm repo"
       kubernetes.core.helm_repository:
         name: grafana
         repo_url: "https://grafana.github.io/helm-charts"
       tags: grafana
 
-    - name: Deploy latest version of Prometheus chart inside monitoring namespace (and create it)
+    - name: "STAGE_[ 9.7 of 18 ] --- Deploy latest version of Prometheus chart inside monitoring namespace (and create it)"
       kubernetes.core.helm:
         name: prometheus
         chart_ref: prometheus-community/prometheus
@@ -63,7 +58,7 @@
     #        enabled: true
 
    
-    - name: Wait till Prometheus server  deployment  replicas be greater than 0
+    - name: "STAGE_[ 9.8 of 18 ] --- Wait till Prometheus server  deployment  replicas be greater than 0"
       shell: | 
         sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf -n monitoring get deployment prometheus-server -o jsonpath='{.status.availableReplicas}'  
       register: prometheus_replicas_available
@@ -72,7 +67,7 @@
       delay: 10
       tags: wait_prometheus
    
-    - name: Deploy Grafana chart using values files on target
+    - name: "STAGE_[ 9.9 of 18 ] --- Deploy Grafana chart using values files on target"
       kubernetes.core.helm:
         name: grafana
         chart_ref: grafana/grafana

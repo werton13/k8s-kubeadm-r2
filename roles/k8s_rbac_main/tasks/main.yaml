@@ -1,37 +1,14 @@
 ---
-# create tenant admin user certificate
-#- import_playbook: ./k8s_rbac_prepare_certs.yaml
 
-# create tenant admin kubeconfig files
-#- import_playbook: ./k8s_rbac_prepare_kubeconfigs.yaml
-
-#- hosts: masters[0]
-#  gather_facts: true
-#  become: yes
-#  vars_files:
-#    - ./vars/base_vars.yaml
-#  tasks:
-    # create a dedicated namespace for a Tenant
-    - name: create a namespace for a K8s tenant
+    - name: "STAGE_[ 14.1 of 18 ] --- create a namespace for a K8s tenant"
       kubernetes.core.k8s:
         kubeconfig: "/etc/kubernetes/admin.conf"
         name: "{{ tenant_ns_default }}"
         api_version: v1
         kind: Namespace
         state: present
-#    - name: create folder for K8s RBAC manifests
-#      file:
-#        path: "/home/{{ os_admin_username }}/k8s_addons/rbac"
-#        state: directory
-#        mode: '0644'
-
-#- hosts: masters[0]
-#  gather_facts: true
-#  become: yes
-#  vars_files:
-#    - ./vars/base_vars.yaml
-#  tasks:         
-    - name: create K8s ClusterRoleBinding's and RoleBindings manifests from templates 
+       
+    - name: "STAGE_[ 14.2 of 18 ] --- create K8s ClusterRoleBinding's and RoleBindings manifests from templates"
       template: 
         src: "./templates/{{ item }}.j2"
         dest: "/home/{{ os_admin_username }}/k8s_addons/rbac/{{ item }}"
@@ -41,7 +18,7 @@
         - k8s_tenant_role_binding.yaml        # bind default Admin ClusterRole to tenantadmin user on the Tenant namespace level
         - k8s_tenant_clusterrole_nd_binding.yaml
 
-    - name: apply K8s roles manifests for a tenant
+    - name: "STAGE_[ 14.3 of 18 ] --- apply K8s roles manifests for a tenant"
       kubernetes.core.k8s:
         kubeconfig: "/etc/kubernetes/admin.conf"
         state: present
@@ -51,7 +28,7 @@
         - "/home/{{ os_admin_username }}/k8s_addons/rbac/k8s_tenant_node_drain_clusterrole.yaml"
     
     # here we need to create 3 role assignment's - two for our custom roles and one for a builtin Admin
-    - name: apply ClusterRoleBinding's and RoleBindings manifests
+    - name: "STAGE_[ 14.4 of 18 ] --- apply ClusterRoleBinding's and RoleBindings manifests"
       kubernetes.core.k8s:
         kubeconfig: "/etc/kubernetes/admin.conf"
         state: present

@@ -1,38 +1,31 @@
 ---
-#- hosts: masters[0]
-#  gather_facts: true
-#  become: yes
-#  vars_files:
-#    - ./vars/base_vars.yaml
-#  tasks:
-    - name: create folder for  metrics server config file
-      file:
-        path: "/home/{{ os_admin_username }}/k8s_addons/metrics"
-        state: directory
-        mode: '0644'
-    
-    - name: copy metrics server config file
-      copy:
-        src: "./files/metrics_server_values.yaml"
-        dest: "/home/{{ os_admin_username }}/k8s_addons/metrics/metrics_server_values.yaml"
-        mode: '0644'
+  - name: "STAGE_[ 10.1 of 18 ] --- create folder for  metrics server config file"
+    file:
+      path: "/home/{{ os_admin_username }}/k8s_addons/metrics"
+      state: directory
+      mode: '0644'
+  
+  - name: "STAGE_[ 10.2 of 18 ] --- copy metrics server config file"
+    copy:
+      src: "./files/metrics_server_values.yaml"
+      dest: "/home/{{ os_admin_username }}/k8s_addons/metrics/metrics_server_values.yaml"
+      mode: '0644'
+  
+  - name: "STAGE_[ 10.3 of 18 ] --- Add Kubernetes Metrics Server  Helm repo"
+    kubernetes.core.helm_repository:
+      name: metrics-server
+      repo_url: "https://kubernetes-sigs.github.io/metrics-server"
+    tags: 
+      - metrics-server
+        metrics-repo
 
-    - name: Add Kubernetes Metrics Server  Helm repo
-      kubernetes.core.helm_repository:
-        name: metrics-server
-        repo_url: "https://kubernetes-sigs.github.io/metrics-server"
-      tags: 
-        - metrics-server
-          metrics-repo
-
-
-    - name: Deploy metrics server
-      kubernetes.core.helm:
-        name: metrics-server
-        chart_ref: metrics-server/metrics-server
-        release_namespace: kube-system
-        kubeconfig: "/etc/kubernetes/admin.conf"
-        values_files:
-          - "/home/{{ os_admin_username }}/k8s_addons/metrics/metrics_server_values.yaml"
-      tags:
-        - metrics-server
+  - name: "STAGE_[ 10.4 of 18 ] --- Deploy metrics server"
+    kubernetes.core.helm:
+      name: metrics-server
+      chart_ref: metrics-server/metrics-server
+      release_namespace: kube-system
+      kubeconfig: "/etc/kubernetes/admin.conf"
+      values_files:
+        - "/home/{{ os_admin_username }}/k8s_addons/metrics/metrics_server_values.yaml"
+    tags:
+      - metrics-server
