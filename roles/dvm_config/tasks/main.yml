@@ -1,0 +1,4 @@
+---
+# tasks file for dvm-config
+- name: STAGE_[ 15 ] --- CONFIGURE DVM HOST ENVIRONMENT
+  include_tasks: configure_dvm.yaml
