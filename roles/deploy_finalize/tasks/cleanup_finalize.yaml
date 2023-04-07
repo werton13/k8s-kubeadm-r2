@@ -1,5 +1,5 @@
 ---  
-  - name: "STAGE_[ 16.1 of 18 ] --- cleanup local files
+  - name: "STAGE_[ 16.1 of 18 ] --- cleanup local files"
     file:
       path: "{{ item }}"
       state: absent
