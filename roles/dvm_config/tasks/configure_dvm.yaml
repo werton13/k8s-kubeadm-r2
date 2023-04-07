@@ -98,11 +98,11 @@
       - "{{ tenant_k8s_admin_username }}-config"
     delegate_to: "{{ groups.masters[0] }}"
   
-  - name: "STAGE_[ 15.14 of 18 ] ---DVM host - ansible deployment log from masters[0]"
-    fetch:
-      src:  /root/ansible.log 
-      dest: "/home/{{ os_admin_username }}/deployment_log/ansible.log"
-      flat: true
-    delegate_to: "{{ groups.masters[0] }}"
+#  - name: "STAGE_[ 15.14 of 18 ] ---DVM host - ansible deployment log from masters[0]"
+#    fetch:
+#      src:  /root/ansible.log 
+#      dest: "/home/{{ os_admin_username }}/deployment_log/ansible.log"
+#      flat: true
+#    delegate_to: "{{ groups.masters[0] }}"
 
     
