@@ -6,8 +6,8 @@ server:
       operator: "Equal"
       value: "monitoring"
       effect: "NoSchedule"
-  nodeSelector:
-    servicegroup: monitoring
+  #nodeSelector:
+  #  servicegroup: monitoring
     
 ingress:
   enabled: true
@@ -18,8 +18,8 @@ kube-state-metrics:
       operator: "Equal"
       value: "monitoring"
       effect: "NoSchedule"
-  nodeSelector:
-    servicegroup: monitoring
+#  nodeSelector:
+#    servicegroup: monitoring
 
 prometheus-pushgateway:
   tolerations:
@@ -27,8 +27,8 @@ prometheus-pushgateway:
       operator: "Equal"
       value: "monitoring"
       effect: "NoSchedule"
-  nodeSelector:
-    servicegroup: monitoring
+#  nodeSelector:
+#    servicegroup: monitoring
 
 serverFiles:
 
