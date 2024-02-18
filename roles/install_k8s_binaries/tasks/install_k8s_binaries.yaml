@@ -3,23 +3,37 @@
     - name: "STAGE_[ 3.1 of 18 ] Download the Google Cloud public signing key"
       ansible.builtin.get_url:
         url: https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key #https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg           #/etc/apt/keyrings/kubernetes-archive-keyring.gpg 
+        dest: /etc/apt/keyrings/Release.key                          #/etc/apt/keyrings/kubernetes-archive-keyring.gpg 
         mode: '0644'
       register: dnl_state
       until: dnl_state.failed == false
       retries: 100
       delay: 10
-      tags: repoad        
+      tags: gpg_add
+
+    - name: "dearmor gpg"
+      shell: |
+        gpg --dearmor < /etc/apt/keyrings/Release.key -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        rm /etc/apt/keyrings/Release.key
     
     - name: "STAGE_[ 3.2 of 18 ] Add the Kubernetes apt repository"
       ansible.builtin.apt_repository:
-        repo: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ 
+        repo: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /'
         #repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
         state: present
         filename: kubernetes
         update_cache: true
       tags:
-        - repoadd
+        - k8s_repoadd
+
+    - name: "get kubectl version available"
+      shell: |
+        apt policy kubectl | head -3
+      register: kube_v_avl
+
+    - name: "show kube version available"
+      debug:
+        msg: "{{ kube_v_avl.stdout_lines }}"
     
     #echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
     - name: "STAGE_[ 3.3 of 18 ] debug k8s_ver variable"
