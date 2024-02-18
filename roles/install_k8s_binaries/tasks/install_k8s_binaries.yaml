@@ -2,8 +2,8 @@
   
     - name: "STAGE_[ 3.1 of 18 ] Download the Google Cloud public signing key"
       ansible.builtin.get_url:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        dest: /etc/apt/keyrings/kubernetes-archive-keyring.gpg 
+        url: https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key #https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg           #/etc/apt/keyrings/kubernetes-archive-keyring.gpg 
         mode: '0644'
       register: dnl_state
       until: dnl_state.failed == false
@@ -13,7 +13,8 @@
     
     - name: "STAGE_[ 3.2 of 18 ] Add the Kubernetes apt repository"
       ansible.builtin.apt_repository:
-        repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+        repo: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ 
+        #repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
         state: present
         filename: kubernetes
         update_cache: true
