@@ -10,7 +10,7 @@ To do:
 3. add audit configuration
 4. add RBAC + gatekeeper
 
-I have a lot to add, so this list will also be updated.
+updated
 
 
  
