@@ -3,8 +3,8 @@ tolerations:
     operator: "Equal"
     value: "monitoring"
     effect: "NoSchedule"
-nodeSelector:
-  servicegroup: monitoring
+#nodeSelector:
+#  servicegroup: monitoring
   
 persistence:
   type: pvc
