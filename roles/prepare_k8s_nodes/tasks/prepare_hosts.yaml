@@ -27,6 +27,29 @@
     - name: check availability for log
       ansible.builtin.ping:
 
+# change DNS server in the netplan config to IP specifical in the target environment
+    - name: "search netplan file with dns configuration"
+      shell: |
+        grep -ilr "{{ def_dns  }}" /tmp/netplan
+      register: netplan_path
+
+    - name: "show netplan path"
+      debug:
+        msg:
+          - "netplan config found in:"
+          - "{{ netplan_path.stdout  }}"
+
+    - name: "change dns server to environment specific values"
+      replace:
+        path: "{{ netplan_path.stdout }}"
+        regexp: "{{ def_dns }}"
+        replace: "{{ env_dns1 }}\n\t  - {{ env_dns2 }}"
+
+    - name: "apply netplan after dns change"
+      shell: |
+        netplan apply
+      
+
     - name: Download Docker’s official GPG key
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
