@@ -43,7 +43,7 @@
       replace:
         path: "{{ netplan_path.stdout }}"
         regexp: "{{ def_dns }}"
-        replace: "{{ env_dns1 }}\n\t  - {{ env_dns2 }}"
+        replace: "{{ env_dns1 }}\n          - {{ env_dns2 }}" #10spaces -tabs are not accepted by netplan
 
     - name: "apply netplan after dns change"
       shell: |
