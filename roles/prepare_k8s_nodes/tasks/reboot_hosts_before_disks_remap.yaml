@@ -12,7 +12,8 @@
         delay: 10
         timeout: 600
       loop:  "{{ groups.masters + groups.workers }}" #"{{ groups.masters[1:] + groups.workers }}"
-      connection: local
+      delegate_to: dvm
+#      connection: local
 
     - name: Check all hosts contain /dev/sdb, /dev/sdc
       ansible.builtin.stat:
@@ -36,7 +37,8 @@
         delay: 10
         timeout: 600
       loop: "{{ groups.masters + groups.workers }}" # "{{ groups.masters[1:] + groups.workers }}"
-      connection: local
+      delegate_to: dvm
+#      connection: local
 
 #- hosts: masters[0]
 #  become: true
