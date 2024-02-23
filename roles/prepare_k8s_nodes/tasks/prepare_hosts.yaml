@@ -14,7 +14,8 @@
         delay: 10
         timeout: 600
       loop: "{{ groups.masters + groups.workers }}"
-      connection: local
+      delegate_to: dvm
+#      connection: local
 
   
 #- hosts: masters:workers
