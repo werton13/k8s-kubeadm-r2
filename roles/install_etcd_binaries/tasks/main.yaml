@@ -1,0 +1,40 @@
+---
+  - name: "set etcd releases url value"
+    set_fact:
+      ETCD_RELEASES_URL: https://api.github.com/repos/etcd-io/etcd/releases/latest
+      
+  - name: "get etcd download url"
+    shell: |
+      curl -s "{{ ETCD_RELEASES_URL }}" | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4
+    register: etcd_url
+
+  - name: " get etcd release file name"
+    shell: |
+      echo "{{ etcd_url.stdout }}" | cut -d "/" -f9
+    register: etcd_file
+        
+  - name: debug
+    debug:
+      msg: "{{ etcd_file.stdout }}"      
+
+  - name: "download etcd release"
+    ansible.builtin.get_url:
+      url: "{{ etcd_url.stdout }}"
+      dest: "/home/{{ os_admin_username }}/k8s_bootstrap"
+      mode: '0644'
+    tags: etcd_download
+
+  - name: "unpack etcd binaries"
+    unarchive:
+      src: "/home/{{ os_admin_username }}/k8s_bootstrap/{{ etcd_file.stdout}}"
+      dest: "/home/{{ os_admin_username }}/k8s_bootstrap/"
+      remote_src: true
+    tags: etcd_unpack
+
+  - name: "install etcdctl"
+    ansible.builtin.copy:
+      src: "/home/{{ os_admin_username }}/k8s_bootstrap/{{ etcd_file.stdout[:-7] }}/etcdctl"
+      dest: /usr/local/bin/
+      mode: '0744'
+      remote_src: true
+...

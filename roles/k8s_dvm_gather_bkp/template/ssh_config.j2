@@ -1,0 +1,17 @@
+host MST01
+  hostname {{ groups.masters[0] }}
+  preferredauthentications publickey
+  user kuberadm
+  identityfile ~/.ssh/id_ed25519
+ 
+host MST02
+  hostname {{ groups.masters[1] }}
+  preferredauthentications publickey
+  user kuberadm
+  identityfile ~/.ssh/id_ed25519
+ 
+host MST03
+  hostname {{ groups.masters[2] }}
+  preferredauthentications publickey
+  user kuberadm
+  identityfile ~/.ssh/id_ed25519

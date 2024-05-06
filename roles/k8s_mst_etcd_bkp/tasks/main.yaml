@@ -1,0 +1,17 @@
+ - name: "create directory's for etcd backup files on every master"
+   file:
+     path: "/etcd_backup"
+     state: directory
+     owner: kuberadm
+     group: kuberadm
+     mode: '2744'
+
+ - name: "copy backup script to /opt/"
+   copy:
+     src: etcd_backup_script.sh
+     dest: /opt/etcd_backup_script.sh
+     mode: '0755'
+ 
+ - name: Execute ETCD Backup Script
+   shell:
+     cmd: /opt/etcd_backup_script.sh

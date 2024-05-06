@@ -43,10 +43,10 @@
 
     - name: "STAGE_[ 3.4 of 18 ] update apt"
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         name: "{{ item }}"
         state: present
-        allow_downgrade: yes
+        allow_downgrade: true
       loop:
         - "kubectl={{ k8s_ver }}"
         - "kubeadm={{ k8s_ver }}"

@@ -1,7 +1,7 @@
 ---
 
 #- hosts: masters:workers
-#  become: yes
+#  become: true
 #  vars_files:
 #    - ./vars/base_vars.yaml
 #
@@ -20,7 +20,7 @@
   
 #- hosts: masters:workers
 #  gather_facts: true
-#  become: yes
+#  become: true
 #  vars_files:
 #    - ./vars/base_vars.yaml
 #  
@@ -79,7 +79,7 @@
 
     - name: update apt
       apt:
-        update_cache: yes
+        update_cache: true
         name: "{{ item }}"
         state: present
       loop:
@@ -150,7 +150,7 @@
     - name: restart containerd
       systemd:
         state: restarted
-        daemon_reload: yes
+        daemon_reload: true
         name: "{{ item }}"
       loop:
         - containerd

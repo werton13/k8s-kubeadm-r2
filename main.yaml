@@ -17,26 +17,27 @@
 # prepare OS configuration and kernel parameters and install packages before run K8s components
 - hosts: masters:workers
   gather_facts: true
-  become: yes
+  become: true
   roles:
     - prepare_k8s_nodes
 
-# install Helm on master nodes
+# install Helm and etcd tools on master nodes
 - hosts: dvm:masters
   gather_facts: true
-  become: yes
+  become: true
   pre_tasks:
     - name:  "STAGE_[ 2 of 18 ]- install HELM v binaries on master nodes"
       debug:
         msg: "STAGE_[ 2 of 18 ]- install HELM v {{ helm_version }} binaries on master nodes"
   roles:
+    - install_etcd_binaries
     - role: geerlingguy.helm
       helm_version: 'v3.11.1'
 
 # install K8s binaries
 - hosts: masters:workers
   gather_facts: true
-  become: yes
+  become: true
   roles:
     - install_k8s_binaries
     
@@ -47,13 +48,13 @@
 # prepare folders and prepare K8s cluster role manifests
 - hosts: workers
   gather_facts: true
-  become: yes
+  become: true
   roles:
     - k8s_rbac_cluster_role_manifests
 
 - hosts: masters[0]
   gather_facts: true
-  become: yes
+  become: true
   vars_files:
     - ./vars/base_vars.yaml
   roles:
@@ -68,16 +69,23 @@
 #    - k8s_rbac_kubeconfigs
 #    - k8s_rbac_main           # add K8s RBAC components
 
+- hosts: masters
+  gather_facts: true
+  become: true
+  roles:
+    - k8s_mst_etcd_bkp
+  
 # configure management evironment on DVM 
 - hosts: dvm
   gather_facts: true
-  become: yes
+  become: true
   roles:
     - dvm_config
+    - k8s_dvm_gather_bkp
 
 - hosts: masters[0]
   gather_facts: true
-  become: yes
+  become: true
   roles:
     - deploy_finalize
   

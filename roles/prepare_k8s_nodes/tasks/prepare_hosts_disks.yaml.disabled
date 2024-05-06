@@ -9,7 +9,7 @@
 # run on all hosts except first master - which is control node, need to add additional task to process first master 
 - name: "Configure LVMs, FSes and mount them"
   hosts: masters:workers #masters[1:]:workers 
-  become: yes
+  become: true
   vars:
     configure_lvm_and_fs_storages:
       - disk: sdb

@@ -11,7 +11,7 @@
         path: "/home/{{ os_admin_username }}/k8s_addons/pki/{{ tenant_k8s_admin_username }}-key.pem"
         size: 2048
         type: "RSA"
-        backup: yes
+        backup: true
 
     - name: "STAGE_[ 12.3 of 18 ] --- create CSR for tenant K8s users"
       openssl_csr:

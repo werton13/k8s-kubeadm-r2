@@ -1,0 +1,77 @@
+- name: "create svc account for backup gathering" # what with password?
+  ansible.builtin.user:
+    name: bkpsvc
+    shell: /bin/bash
+    create_home: true
+
+- name: "create .ssh dir for bkpsvc user"
+  file:
+     path: "/home/bkpsvc/.ssh"
+     state: directory
+     owner: bkpsvc
+     group: bkpsvc
+     mode: '0755'
+
+- name: "create ssh keys for bkpsvc to connect masternodes"
+  openssh_keypair:
+    path: /home/bkpsvc/.ssh/id_ed25519
+    type: ed25519
+
+- name: "configure ssh config file for bkpsvc"
+  template:
+    src: ssh_config.j2
+    dest: /home/bkpsvc/.ssh/config
+
+- name: "copy ssh pub key to masters"
+  shell: |
+    ssh-copy-id -i /home/bkpsvc/.ssh/id_ed25519.pub "kuberadm@{{ item }}"
+  loop: "{{ groups.masters }}"
+  delegate_to: dvm
+
+- name: "create root dir for etcd backups"
+  file:
+     path: "/etcd_backups"
+     state: directory
+     owner: bkpsvc
+     group: bkpsvc
+     mode: '0755'
+  register: etcd_backups
+
+- name: "create subdirs for each node backups and logs inside root dir"
+  file:
+     path: "/etcd_backups/{{ item }}"
+     state: directory
+     owner: bkpsvc
+     group: bkpsvc
+     mode: '0755'
+  loop:
+    - MST01
+    - MST02
+    - MST03
+    - logs
+
+- name: "create directory for the files gathering script"
+  file:
+     path: "/home/bkpsvc/.scripts"
+     state: directory
+     owner: bkpsvc
+     group: bkpsvc
+     mode: '0755'
+
+- name: "copy etcd backup files gathering  script"
+  copy:
+    src: backup_etcd.sh
+    dest: /home/bkpsvc/.scripts/backup_etcd.sh
+    owner: bkpsvc
+    group: bkpsvc
+    mode: '0744'
+
+- name: "create crontab for bkpsvc - to run backup gathering script each night at 2am"
+  # day,month - default "*"
+  ansible.builtin.cron:
+    name: "gather etcd backup files from k8s masters"
+    minute: "0"
+    hour: "2"
+    user: bkpsvc
+    job: "/home/bkpsvc/.scripts/backup_etcd.sh"
+    
