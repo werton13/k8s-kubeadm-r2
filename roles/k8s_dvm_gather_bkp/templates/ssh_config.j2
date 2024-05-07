@@ -1,3 +1,6 @@
+StrictHostKeyChecking no
+UserKnownHostsFile=/dev/null
+
 host MST01
   hostname {{ groups.masters[0] }}
   preferredauthentications publickey

@@ -2,6 +2,14 @@
   - name: "set etcd releases url value"
     set_fact:
       ETCD_RELEASES_URL: https://api.github.com/repos/etcd-io/etcd/releases/latest
+
+  - name: "create directory's for etcd downloads"
+    file:
+      path: "/home/{{ os_admin_username }}/k8s_bootstrap"
+      state: directory
+      owner: "{{ os_admin_username }}"
+      group: "{{ os_admin_username }}"
+      mode: '2744'  
       
   - name: "get etcd download url"
     shell: |

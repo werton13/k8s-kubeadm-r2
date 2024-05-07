@@ -1,4 +1,4 @@
-- name: "create svc account for backup gathering" # what with password?
+- name: "create svc account for backup gathering" # svc user without password
   ansible.builtin.user:
     name: bkpsvc
     shell: /bin/bash
@@ -16,17 +16,25 @@
   openssh_keypair:
     path: /home/bkpsvc/.ssh/id_ed25519
     type: ed25519
+    owner: bkpsvc
+    group: bkpsvc
+    comment: bkpsvc@dvm
 
 - name: "configure ssh config file for bkpsvc"
   template:
     src: ssh_config.j2
     dest: /home/bkpsvc/.ssh/config
 
-- name: "copy ssh pub key to masters"
-  shell: |
-    ssh-copy-id -i /home/bkpsvc/.ssh/id_ed25519.pub "kuberadm@{{ item }}"
-  loop: "{{ groups.masters }}"
-  delegate_to: dvm
+- name: "fetch ssh public key from file in bkpsvc home dir"
+  shell: cat /home/bkpsvc/.ssh/id_ed25519.pub
+  register: ssh_key
+
+- name: "deploy ssh pub key bkpsvc to masters"
+  ansible.posix.authorized_key:
+    user: kuberadm
+    key: "{{ ssh_key.stdout }}"
+  delegate_to: "{{ item }}"
+  loop:  "{{ groups.masters }}"
 
 - name: "create root dir for etcd backups"
   file:
