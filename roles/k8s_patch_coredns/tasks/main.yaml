@@ -1,36 +1,27 @@
-# this role required to allow coredns resolve endpoints not available on public resolvers
-# need to edit or re-create coredns config map this way:
-# EXAMPLE:
-#           hosts {
-#             10.99.76.65  iaas152.avntg.cloud.mts.ru
-#             fallthrough
-#            }
+---
 
-- name: "backup and delete coredns config map"
-  shell: |
-    kubectl --kubeconfig=/etc/kubernates/admin.conf -n kube-system get cm coredns -o yaml > coredns_cm.bkp
-    kubectl --kubeconfig=/etc/kubernates/admin.conf -n kube-system delete cm coredns
-
-- name: "copy new coredns cm with custom 'hosts' block"
-  template:
-    src: coredns_fix.yaml.j2
-    dest: "/home/{{ os_admin_username }}/k8s_addons/coredns_fix.yaml"
-
-- name: "backup and delete coredns config map"
-  shell: |
-    kubectl --kubeconfig=/etc/kubernates/admin.conf -n kube-system create -f /home/{{ os_admin_username }}/k8s_addons/coredns_fix.yaml"
-    kubectl --kubeconfig=/etc/kubernates/admin.conf -n kube-system rollout restart deployment coredns
-
-- name: "get coredns status"
-  shell:
-    sleep 30
-    kubectl --kubeconfig=/etc/kubernates/admin.conf -n kube-system get pod | grep coredns
-  register: corednspods_state
-
-- name: "show coredns pod's state"
-  debug:
-    msg: "corednspods_state.stdout_lines"
-
-
-
-
+  - name: "backup and delete coredns config map"
+    shell: |
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system get cm coredns -o yaml > coredns_cm.bkp
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system delete cm coredns
+  
+  - name: "copy new coredns cm with custom 'hosts' block"
+    template:
+      src: coredns_fix.yaml.j2
+      dest: "/home/{{ os_admin_username }}/k8s_addons/coredns_fix.yaml"
+  
+  - name: "backup and delete coredns config map"
+    shell: |
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system create -f /home/{{ os_admin_username }}/k8s_addons/coredns_fix.yaml"
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system rollout restart deployment coredns
+  
+  - name: "get coredns status"
+    shell:
+      sleep 30
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system get pod | grep coredns
+    register: corednspods_state
+  
+  - name: "show coredns pod's state"
+    debug:
+      msg: "corednspods_state.stdout_lines"
+...
