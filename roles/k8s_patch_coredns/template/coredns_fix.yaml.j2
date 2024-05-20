@@ -1,0 +1,37 @@
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+apiVersion: v1
+data:
+  Corefile: |2+
+        .:53 {
+            log
+            errors
+            health {
+               lameduck 5s
+            }
+            ready
+            kubernetes cluster.local in-addr.arpa ip6.arpa {
+               pods insecure
+               fallthrough in-addr.arpa ip6.arpa
+               ttl 30
+            }
+           hosts {
+             {{ vcloud_ip }}  {{ vcloud_url[8:-4]  }}
+             fallthrough
+            }
+
+            prometheus :9153
+            forward . /etc/resolv.conf {
+               max_concurrent 1000
+            }
+            }
+            cache 30
+            loop
+            reload
+            loadbalance
+        }
+#vcloud_url      = "https://iaas.cloud.mts.ru/api"
+#vcloud_ip       = "89.22.165.223"
+
