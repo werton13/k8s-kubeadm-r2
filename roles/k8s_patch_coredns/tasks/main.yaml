@@ -12,7 +12,7 @@
 
 - name: "backup and delete coredns config map"
   shell: |
-    kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system create -f /home/"{{ os_admin_username }}"/k8s_addons/coredns_fix.yaml"
+    kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system create -f /home/"{{ os_admin_username }}"/k8s_addons/coredns_fix.yaml
     kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system rollout restart deployment coredns
 
 - name: "get coredns status"
