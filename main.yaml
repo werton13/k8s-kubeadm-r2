@@ -60,8 +60,9 @@
   roles:
     - bootstrap_k8s_cluster # create a new K8s cluster, join additional master and worker nodes
     - deploy_k8s_cni        # add and configure K8s CNI components
-    - deploy_k8s_csi        # add and configure K8s CSI components - can be vcloud or vsphere
     - k8s_patch_coredns
+    - deploy_k8s_csi        # add and configure K8s CSI components - can be vcloud or vsphere
+
 #    - categorize_k8s_nodes  # label, taint and cordon nodes depend on their purpose
     - k8s_addons_monitoring # add and configure K8s monitoring components
     - k8s_addons_metrics    # add K8s metrics components
