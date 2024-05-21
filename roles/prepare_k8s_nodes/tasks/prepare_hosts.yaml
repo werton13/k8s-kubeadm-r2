@@ -33,6 +33,7 @@
       shell: |
         grep -ilr "{{ def_dns  }}" /etc/netplan
       register: netplan_path
+      failed_when: netplan_path.rc not in [ 0, 1 ]
 
     - name: "show netplan path"
       debug:
@@ -45,6 +46,7 @@
         path: "{{ netplan_path.stdout }}"
         regexp: "{{ def_dns }}"
         replace: "{{ env_dns1 }}\n          - {{ env_dns2 }}" #10spaces -tabs are not accepted by netplan
+      failed_when: netplan_path.rc not in [ 0, 1 ]
 
     - name: "apply netplan after dns change"
       shell: |
