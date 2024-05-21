@@ -23,7 +23,7 @@
     kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system rollout restart deployment coredns
 
 - name: "wait 30 sec and get coredns status"
-  shell:
+  shell: |
     sleep 30
     kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system get pod | grep coredns
   register: corednspods_state
