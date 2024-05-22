@@ -48,5 +48,21 @@
       - vcloud-csi-config.yaml
       - storage_class.yaml
     tags: apply_csi_manifests
+    
+  - name:  "STAGE_[ 7.7 of 18 ] --- Patch csi-vcd-controllerplugin dnsPolicy"
+    kubernetes.core.k8s_json_patch:
+      kind: Deployment
+      namespace: kube-system
+      kubeconfig: "/etc/kubernetes/admin.conf"
+      name: csi-vcd-controllerplugin
+      patch:
+        - op: replace
+          path: /spec/template/spec/dnsPolicy
+          value: ClusterFirst
+
+
+#    shell: |
+#      kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system patch deploy csi-vcd-controllerplugin -p '{"spec": {"template": {"spec": {"dnsPolicy": "ClusterFirst" }}}}'
+
 
         
