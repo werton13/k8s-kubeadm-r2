@@ -6,21 +6,26 @@
         state: directory
         mode: '0644'
     
-    - name: "STAGE_[ 9.2 of 18 ] --- copy Prometheus and Grafana config files"
+    - name: "STAGE_[ 9.2 of 18 ] --- copy Prometheus  helm values file"
       copy:
         src: "./files/{{ item }}"
         dest: "/home/{{ os_admin_username }}/k8s_addons/monitoring/{{ item }}"
         mode: '0644'
       loop:
-        - grafana_values.yaml
         - prometheus_values.yaml  
 
     - name: "STAGE_[ 9.3 of 18 ] --- create alertmanager config from template"
       template:
-        src: "./templates/alert_manager_config.yaml.j2"
-        dest: "/home/{{ os_admin_username }}/k8s_addons/monitoring/alert_manager_config.yaml"
+        src: "./templates/{{ item }}.j2"
+        dest: "/home/{{ os_admin_username }}/k8s_addons/monitoring/{{ item }}"
         mode: '0644'
-      tags: alert_mgr_config
+      loop:
+        - alert_manager_config.yaml
+        - grafana_values.yaml
+      tags: 
+        - alert_mgr_config
+        - grafana_config
+    
 
     - name: "STAGE_[ 9.4 of 18 ] --- merge alertmanager config file with prometheus_values file"
       shell: |

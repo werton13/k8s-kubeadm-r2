@@ -38,7 +38,19 @@
     retries: 15
     delay: 10
     tags: wait_tigera
-  - name: "STAGE_[ 6.7 of 18 ] --- apply Calico config manifest"
+  
+  - name: "STAGE_[ 6.7 of 18 ] --- modify Tigera default installation config"
+    kubernetes.core.k8s_json_patch:
+      kind: Installation
+      namespace: tigera-operator
+      kubeconfig: "/etc/kubernetes/admin.conf"
+      name: default
+      patch:
+        - op: add
+          path: /spec/registry
+          value: "{{ docker_mirror }}"
+
+  - name: "STAGE_[ 6.8 of 18 ] --- apply Calico config manifest"
     kubernetes.core.k8s:
       kubeconfig: "/etc/kubernetes/admin.conf"
       state: present

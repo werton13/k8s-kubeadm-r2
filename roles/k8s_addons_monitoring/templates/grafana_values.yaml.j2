@@ -1,3 +1,7 @@
+global:
+  # -- Overrides the Docker registry globally for all images
+  imageRegistry: {{ docker_mirror }} 
+
 tolerations:
   - key: "servicegroup"
     operator: "Equal"
