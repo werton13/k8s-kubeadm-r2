@@ -5,6 +5,7 @@ kind: Installation
 metadata:
   name: default
 spec:
+  registry: {{ docker_mirror }}
   # Configures Calico networking.
   calicoNetwork:
     # Note: The ipPools section cannot be modified post-install.
