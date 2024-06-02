@@ -9,3 +9,4 @@ To do:
 2. add certmanager
 3. add audit configuration
 4. add RBAC + gatekeeper
+...
