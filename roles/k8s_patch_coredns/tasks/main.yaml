@@ -14,7 +14,7 @@
 
 - name: "copy new coredns cm with custom 'hosts' block"
   template:
-    src: coredns_fix.yaml.j2
+    src: "coredns_fix_{{ cloud_type }}.yaml.j2"
     dest: "/home/{{ os_admin_username }}/coredns_cfg/coredns_fix.yaml"
 
 - name: "backup and delete coredns config map"
