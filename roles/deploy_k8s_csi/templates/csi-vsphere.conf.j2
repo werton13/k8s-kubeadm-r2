@@ -4,7 +4,7 @@ cluster-distribution = ""
 #ca-file = "" # optional, use with insecure-flag set to false
 #thumbprint = "<cert thumbprint>" # optional, use with insecure-flag set to false without providing ca-file
 
-[VirtualCenter "{{ vsphere_host_ip }}"]
+[VirtualCenter "{{ vsphere_ip }}"]
 insecure-flag = "true"
 user = {{ vsphere_user }}
 password = {{ vsphere_password }}
