@@ -1,2 +1,4 @@
-- import_playbook: ../vsphere_csi/vsphere_cpi.yaml
-- import_playbook: ../vsphere_csi/vsphere_csi.yaml
+- name: include tasks for installing CPI  for vsphere
+  include_tasks:  ./vsphere_csi/vsphere_cpi.yaml
+- name: include tasks for installing CSI driver for vsphere
+  include_tasks:  ./vsphere_csi/vsphere_csi.yaml
