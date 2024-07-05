@@ -40,13 +40,22 @@
         msg:
           - "netplan config found in:"
           - "{{ netplan_path.stdout  }}"
+          
+    - name: "get all indents before def_dns - as string variable"
+      shell: |
+        cat "{{ netplan_path.stdout }}" | grep "{{ def_dns  }}"  | cut -d'-' -f1
+      register: indents
 
     - name: "change dns server to environment specific values"
       replace:
         path: "{{ netplan_path.stdout }}"
         regexp: "{{ def_dns }}"
-        replace: "{{ env_dns1 }}\n          - {{ env_dns2 }}" #10spaces -tabs are not accepted by netplan
+        replace: "{{ env_dns1 }}\n{{ indents.stdout }}- {{ env_dns2 }}" #10spaces -tabs are not accepted by netplan
+
       failed_when: netplan_path.rc not in [ 0, 1 ]
+
+
+
 
     - name: "apply netplan after dns change"
       shell: |
