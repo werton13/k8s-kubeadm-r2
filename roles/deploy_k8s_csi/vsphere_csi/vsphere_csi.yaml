@@ -73,24 +73,25 @@
         mode: '0644'
       tags: CSI_manifest_download
 
-  # apply vSphere Container Storage Plug-in manifest
-    - name: Deploy vSphere Container Storage Plug-in.
-      kubernetes.core.k8s:
-        kubeconfig: "/etc/kubernetes/admin.conf"
-        state: present
-        src: "{{ item }}"
-      loop:
-        - "/home/{{ os_admin_username }}/k8s_addons/vsphere_csi/csi_secret.yaml"
-        - "/home/{{ os_admin_username }}/k8s_addons/vsphere_csi/vsphere-csi-driver.yaml"
-      tags: apply_csi_manifests
-  
-  # create storage class manifest
+    # create storage class manifest
     - name: create storage class manifest from  template
       template:
         src: ./templates/storage_class_vsphere.yaml.j2
         dest: "/home/{{ os_admin_username }}/k8s_addons/vsphere_csi/storage_class_vsphere.yaml"
         mode: '0644'
 
+  # apply vSphere Container Storage Plug-in manifest
+    - name: Deploy vSphere Container Storage Plug-in.
+      kubernetes.core.k8s:
+        kubeconfig: "/etc/kubernetes/admin.conf"
+        state: present
+        src: "/home/{{ os_admin_username }}/k8s_addons/vsphere_csi/{{ item }}"
+      loop:
+        - csi_secret.yaml
+        - vsphere-csi-driver.yaml
+        - storage_class_vsphere.yaml
+      tags: apply_csi_manifests
+  
     - name: cleanup local files
       file:
         path: "/home/{{ os_admin_username }}/k8s_addons/vsphere_csi/"
