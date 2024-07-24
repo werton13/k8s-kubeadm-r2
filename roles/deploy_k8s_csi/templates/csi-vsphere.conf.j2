@@ -7,6 +7,6 @@ cluster-distribution = ""
 [VirtualCenter "{{ vsphere_ip }}"]
 insecure-flag = "true"
 user = {{ vsphere_user }}
-password = {{ vsphere_password }}
+password = "{{ vsphere_password }}"
 port = "443"
 datacenters = {{ dcname }}
