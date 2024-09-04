@@ -19,7 +19,8 @@
   gather_facts: true
   become: true
   roles:
-    - prepare_k8s_nodes
+    - role: prepare_k8s_nodes
+      nodes: "{{ groups.new_workers }}"
 
 # install K8s binaries
 - hosts: new_workers

@@ -11,7 +11,7 @@
         sleep: 10
         delay: 10
         timeout: 600
-      loop:  "{{ groups.masters + groups.workers }}" #"{{ groups.masters[1:] + groups.workers }}"
+      loop:  "{{ nodes }}"  #"{{ groups.masters + groups.workers }}" #"{{ groups.masters[1:] + groups.workers }}"
       delegate_to: dvm
 #      connection: local
 
@@ -36,7 +36,7 @@
         sleep: 10
         delay: 10
         timeout: 600
-      loop: "{{ groups.masters + groups.workers }}" # "{{ groups.masters[1:] + groups.workers }}"
+      loop: "{{ nodes }}"  #"{{ groups.masters + groups.workers }}" # "{{ groups.masters[1:] + groups.workers }}"
       delegate_to: dvm
 #      connection: local
 
