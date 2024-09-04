@@ -1,6 +1,6 @@
 ---
 
-  - name: "STAGE_[ x of y ] --- get kubernetes cluster  worker noddes join command"
+  - name: "STAGE_[ x of y ] --- get kubernetes cluster  worker nodes join command"
     shell: |
       kubeadm token create --print-join-command
     register: workers_join_out

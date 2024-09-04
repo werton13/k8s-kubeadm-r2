@@ -12,7 +12,8 @@
       debug:
         msg:
           - "Node {{ (newnode_status.stdout | replace('\"','')).split(' ')[0] }} ready status:{{ ready_status }}"
-      until: ready_status is search("True")
-      retries: 20
-      delay: 10
-      ignore_errors: true
+  
+  until: ready_status is search("True")
+  retries: 20
+  delay: 10
+  ignore_errors: true
