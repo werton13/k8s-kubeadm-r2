@@ -18,16 +18,26 @@
 - hosts: new_workers
   gather_facts: true
   become: true
+  vars:
+    def_dns: "8.8.8.8"     #for initial k8s deployment these variables passed via terraform and cloud init, here specifying inside playbook
+    env_dns1: "77.88.8.8"  #for initial k8s deployment these variables passed via terraform and cloud init, here specifying inside playbook
+    env_dns2: "77.88.8.1"  #for initial k8s deployment these variables passed via terraform and cloud init, here specifying inside playbook
   roles:
     - role: prepare_k8s_nodes
       nodes: "{{ groups.new_workers }}"
+      def_dns: "{{ def_dns }}"
+      env_dns1: "{{ env_dns1 }}"
+      env_dns2: "{{ env_dns2 }}"
 
 # install K8s binaries
 - hosts: new_workers
   gather_facts: true
   become: true
+  vars:
+    k8s_ver: "1.28.6-1.1" #for initial k8s deployment these variables passed via terraform and cloud init, here specifying inside playbook
   roles:
-    - install_k8s_binaries
+    - role: install_k8s_binaries
+      k8s_ver: "{{ k8s_ver }}"
     
   post_tasks:
     - name: check required K8s binaries was installed on every host
