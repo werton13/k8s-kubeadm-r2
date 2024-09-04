@@ -64,20 +64,26 @@
     - name: Download Docker’s official GPG key
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/docker.gpg
+        dest: /etc/apt/keyrings/dockergpg
         mode: '0644'
       tags: repodocker
     
-    - name: checkdocker docker.gpg key already exist locally
+    - name: check docker.gpg key already exist locally
       stat:
         path: /etc/apt/keyrings/docker.gpg
       register: dockergpg_check
+
+    - name: "remove existing docker.gpg key"
+      file:
+        path:  /etc/apt/keyrings/docker.gpg
+        state: absent
+      when: dockergpg_check.stat.exists
 
     - name: dearmor docker gpg
       shell: |
         cat /etc/apt/keyrings/dockergpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
       tags: repodocker
-      when: not dockergpg_check.stat.exists
+    #  when: not dockergpg_check.stat.exists
     #
     - name: Add the docker apt repository - for containerd.io
       ansible.builtin.apt_repository:

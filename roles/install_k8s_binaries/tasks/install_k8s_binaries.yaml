@@ -11,12 +11,23 @@
       delay: 10
       tags: gpg_add
 #--------- 
+    - name: "check kubernetes-apt-keyring.gpg key already exist locally"
+      stat:
+        path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      register: kubergpg_check
 
+    - name: "remove existing kubernetes-apt-keyring.gpg key"
+      file:
+        path:  /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        state: absent
+      when: kubergpg_check.stat.exists
 #---------
-    - name: "dearmor gpg"
+    - name: "dearmor kubernetes-apt-keyring.gpg"
       shell: |
-        gpg --dearmor < /etc/apt/keyrings/Release.key -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        cat /etc/apt/keyrings/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
         rm /etc/apt/keyrings/Release.key
+#    gpg --dearmor < /etc/apt/keyrings/Release.key -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+#    rm /etc/apt/keyrings/Release.key
     
     - name: "STAGE_[ 3.2 of 18 ] Add the Kubernetes apt repository"
       ansible.builtin.apt_repository:
