@@ -1,0 +1,5 @@
+---
+# tasks file for prepare_haproxy_lb
+# 
+- name: "STAGE_[ x of 18 ] --- configure haproxy loadbalancer"
+  include_tasks: configure_haproxy_lb.yaml

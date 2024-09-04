@@ -1,0 +1,18 @@
+- block:
+    - name: "STAGE_[x of y] ---get new workers-nodes ready status"
+      shell: >
+        kubectl --kubeconfig=/etc/kubernetes/admin.conf 
+        get nodes  -o json | jq ' .items[] | select( .metadata.name == "{{ item }}")
+        | .metadata.name + " " + .status.conditions[-1].status'
+      register: newnode_status
+    - name: "set clear ready_status fact value with parsing  kubectl output string"
+      set_fact:
+        ready_status: "{{ (newnode_status.stdout | replace('\"','')).split(' ')[1] }}"
+    - name: debug
+      debug:
+        msg:
+          - "Node {{ (newnode_status.stdout | replace('\"','')).split(' ')[0] }} ready status:{{ ready_status }}"
+      until: ready_status is search("True")
+      retries: 20
+      delay: 10
+      ignore_errors: true

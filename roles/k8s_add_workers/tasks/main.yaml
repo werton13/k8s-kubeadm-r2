@@ -1,0 +1,5 @@
+---
+# tasks file for k8s_add_workers
+# 
+- name: add workers nodes to the Kubernetes cluster
+  include_tasks: k8s_join_wrk_nodes.yaml

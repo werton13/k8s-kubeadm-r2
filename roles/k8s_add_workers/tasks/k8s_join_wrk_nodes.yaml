@@ -1,0 +1,24 @@
+---
+
+  - name: "STAGE_[ x of y ] --- get kubernetes cluster  worker noddes join command"
+    shell: |
+      kubeadm token create --print-join-command
+    register: workers_join_out
+
+  - name: "STAGE_[ x of y ] ---extract workers join command"
+    set_fact:
+      worker_join_cmd: "{{ workers_join_out.stdout | replace('\t', '')  }}"
+
+  - name: "STAGE_[ x of y ] ---show worker_join_cmd"
+    debug:
+      msg: "{{ worker_join_cmd }}"
+  
+  - name: "STAGE_[ x of y ] ---join new workers nodes"
+    shell: "{{ worker_join_cmd }}"
+    delegate_to: "{{ item }}"
+    loop: "{{ groups.new_workers }}" # loop through new workers
+    tags: join_workers
+
+  - name: "get new workers-nodes ready status"
+    include_tasks: get_node_ready_status.yaml
+    loop: "{{ groups.new_workers }}"

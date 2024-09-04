@@ -4,9 +4,3 @@ Ansible playbook to bootstrap production-ready K8s cluster with some required ad
 Intended to call from this Terraform module: https://github.com/werton13/k8s-kubeadm-ansible
 this playbook is still in construction and often updating.
 
-To do:
-1. add HAproxy LB
-2. add certmanager
-3. add audit configuration
-4. add RBAC + gatekeeper
-...
