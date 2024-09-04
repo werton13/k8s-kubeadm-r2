@@ -64,7 +64,7 @@
     - name: Download Docker’s official GPG key
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/dockergpg
+        dest: /etc/apt/keyrings/docker.gpg
         mode: '0644'
       tags: repodocker
     

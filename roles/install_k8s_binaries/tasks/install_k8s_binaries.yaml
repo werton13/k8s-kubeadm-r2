@@ -10,7 +10,9 @@
       retries: 100
       delay: 10
       tags: gpg_add
+#--------- 
 
+#---------
     - name: "dearmor gpg"
       shell: |
         gpg --dearmor < /etc/apt/keyrings/Release.key -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
