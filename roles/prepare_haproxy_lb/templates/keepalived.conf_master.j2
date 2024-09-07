@@ -1,0 +1,22 @@
+Master Node
+global_defs {
+  router_id  {{ inventory_hostname }} # The hostname of this host.
+}
+vrrp_script haproxy {
+  script "killall -0 haproxy"
+  interval 2
+  weight 2
+}
+vrrp_instance 50 {
+  virtual_router_id 50
+  advert_int 1
+  priority 50
+  state MASTER
+  interface {{ os_nic1_name }}
+  virtual_ipaddress {
+     {{ k8s_controlPlane_Endpoint }} dev {{ os_nic1_name }} # The virtual IP address that will be shared between PRIMARY and SECONDARY
+  }
+  track_script {
+      haproxy
+  }
+}

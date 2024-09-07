@@ -1,0 +1,76 @@
+global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+        log-format '{"host":"%H","ident":"haproxy","pid":%pid,"time":"%Tl","haproxy":{"conn":{"act":%ac,"fe":%fc,"be":%bc,"srv":%sc},"queue":{"backend":%bq,"srv":%sq},"time":{"tq":%Tq,"tw":%Tw,"tc":%Tc,"tr":%Tr,"tt":%Tt},"termination_state":"%tsc","retries":%rc,"network":{"client_ip":"%ci","client_port":%cp,"frontend_ip":"%fi","frontend_port":%fp},"ssl":{"version":"%sslv","ciphers":"%sslc"},"request":{"method":"%HM","uri":"%[capture.req.uri,json(utf8s)]","protocol":"%HV","header":{"host":"%[capture.req.hdr(0),json(utf8s)]","xforwardfor":"%[capture.req.hdr(1),json(utf8s)]","referer":"%[capture.req.hdr(2),json(utf8s)]"}},"name":{"backend":"%b","frontend":"%ft","server":"%s"},"response":{"status_code":%ST,"header":{"xrequestid":"%[capture.res.hdr(0),json(utf8s)]"}},"bytes":{"uploaded":%U,"read":%B}}}'
+        chroot /var/lib/haproxy
+        stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+        stats timeout 30s
+        user haproxy
+        group haproxy
+        daemon
+
+        # Default SSL material locations
+        ca-base /etc/ssl/certs
+        crt-base /etc/ssl/private
+
+        # See: https://ssl-config.mozilla.org/#server=haproxy&server-version=2.0.3&config=intermediate
+        ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+        ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+        ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
+
+defaults
+        log     global
+        mode    http
+        option  httplog
+        option  dontlognull
+        timeout connect 5000
+        timeout client  50000
+        timeout server  50000
+        errorfile 400 /etc/haproxy/errors/400.http
+        errorfile 403 /etc/haproxy/errors/403.http
+        errorfile 408 /etc/haproxy/errors/408.http
+        errorfile 500 /etc/haproxy/errors/500.http
+        errorfile 502 /etc/haproxy/errors/502.http
+        errorfile 503 /etc/haproxy/errors/503.http
+        errorfile 504 /etc/haproxy/errors/504.http
+
+
+frontend stats
+    mode http
+    bind *:8404
+    stats enable
+    stats uri /stats
+    stats refresh 10s
+    stats admin if LOCALHOST
+
+frontend k8s_api_lb
+  bind {{ k8s_controlPlane_Endpoint }}:6443
+  mode tcp
+  default_backend k8s_masters
+
+frontend k8s_ingress
+  bind {{ k8s_controlPlane_Endpoint }}:443
+  mode tcp
+  default_backend k8s_ingress
+
+
+backend k8s_masters
+  option httpchk
+  http-check send meth GET  uri /readyz
+  http-check expect status 200
+  mode tcp
+  balance roundrobin
+  server {{ master_pref }}-00 {{ master0_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
+  server {{ master_pref }}-01 {{ master1_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
+  server {{ master_pref }}-02 {{ master2_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
+
+backend k8s_ingress
+  option httpchk
+  http-check send meth GET  uri /healthz
+  http-check expect status 200
+  mode tcp
+  balance roundrobin
+  server {{ master_pref }}-00 {{ master0_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
+  server {{ master_pref }}-01 {{ master1_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
+  server {{ master_pref }}-02 {{ master2_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
+
