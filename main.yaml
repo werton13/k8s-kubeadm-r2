@@ -29,6 +29,7 @@
   become: true
   roles:
     - role: prepare_haproxy_lb
+      when: ( lb_count | int ) > 0
   
 # prepare additional disks and remap /var,/var/lib directories, 
 # prepare OS configuration and kernel parameters and install packages before run K8s components
