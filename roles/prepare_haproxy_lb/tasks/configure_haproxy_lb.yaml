@@ -63,12 +63,14 @@
     name: keepalived
     enabled: yes
 
-- name: "restart haproxy and keepalived"
+- name: "restart  keepalived"
   ansible.builtin.service:
-    name: "{{ item }}"
+    name: keepalived
     state: restarted
-  loop:
-    - keepalived
-    - haproxy
+
+- name: "restart haproxy"
+  ansible.builtin.service:
+    name: haproxy
+    state: restarted
 
 # make some test
