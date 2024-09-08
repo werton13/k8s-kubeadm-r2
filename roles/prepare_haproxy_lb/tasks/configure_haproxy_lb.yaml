@@ -6,6 +6,12 @@
   loop:
     - haproxy
     - keepalived
+    
+- name: "configure the kernel to use a VIP on each Haproxy node"
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: '1'
+    reload: true
 
 - block:
     - name: "set node priority type master" #master or backup

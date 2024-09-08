@@ -10,7 +10,7 @@ vrrp_script haproxy {
 vrrp_instance 50 {
   virtual_router_id 50
   advert_int 1
-  priority 50
+  priority 100
   state MASTER
   interface {{ os_nic1_name }}
   virtual_ipaddress {
