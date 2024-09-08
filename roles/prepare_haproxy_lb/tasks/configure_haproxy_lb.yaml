@@ -1,3 +1,12 @@
+- name: "install haproxy and keepalived"
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop:
+    - haproxy
+    - keepalived
+
 - block:
     - name: "set node priority type master" #master or backup
       set_fact:
@@ -7,7 +16,7 @@
       debug:
         msg: "{{ inventory_hostname }} is {{ priority_type }}"
           
-    - name: "wait until keepalived folder  will be created by cloud-init"
+    - name: "wait until keepalived folder  will be created "
       wait_for:
         path: "/etc/keepalived/"
         state: present
