@@ -6,6 +6,13 @@
     - name: "display priority_type"
       debug:
         msg: "{{ inventory_hostname }} is {{ priority_type }}"
+          
+    - name: "wait until keepalived folder  will be created by cloud-init"
+      wait_for:
+        path: /etc/keepalived
+        state: present
+        sleep: 5
+        delay: 5
 
     - name: "copy keepalived template"
       template:
@@ -22,6 +29,13 @@
   - name: "display priority_type"
     debug:
       msg: "{{ inventory_hostname }} is {{ priority_type }}"
+
+  - name: "wait until keepalived folder  will be created by cloud-init"
+    wait_for:
+      path: /etc/keepalived
+      state: present
+      sleep: 5
+      delay: 5  
 
   - name: "copy keepalived template"
     template:
