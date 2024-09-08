@@ -9,7 +9,7 @@
           
     - name: "wait until keepalived folder  will be created by cloud-init"
       wait_for:
-        path: /etc/keepalived
+        path: "/etc/keepalived/"
         state: present
         sleep: 5
         delay: 5
@@ -32,7 +32,7 @@
 
   - name: "wait until keepalived folder  will be created by cloud-init"
     wait_for:
-      path: /etc/keepalived
+      path: "/etc/keepalived/"
       state: present
       sleep: 5
       delay: 5  
