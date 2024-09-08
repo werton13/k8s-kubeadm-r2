@@ -1,25 +1,35 @@
-- name: "set node priority type master" #master or backup
-  set_fact:
-    priority_type: master
+- block:
+    - name: "set node priority type master" #master or backup
+      set_fact:
+        priority_type: master
+
+    - name: "display priority_type"
+      debug: "{{ inventory_hostname is priority_type }}"
+
+    - name: "copy keepalived template"
+      template:
+        src: "keepalived.conf_{{ priority_type }}.j2"
+        dest: /etc/keepalived/keepalived.conf
+
   when: inventory_hostname == groups.haproxy[0]
 
-- name: "set node priority type backup" #master or backup
-  set_fact:
-    priority_type: backup
-  when: inventory_hostname in groups.haproxy[1:]
+- block:
+  - name: "set node priority type master" #master or backup
+    set_fact:
+      priority_type: backup
+  - name: "display priority_type"
+    debug: "{{ inventory_hostname is priority_type }}"
+  - name: "copy keepalived template"
+    template:
+      src: "keepalived.conf_{{ priority_type }}.j2"
+      dest: /etc/keepalived/keepalived.conf
 
-- name: "display priority_type"
-  debug: "{{ inventory_hostname is priority_type }}"
+  when: inventory_hostname in groups.haproxy[1:]
 
 - name: "copy haproxy template"
   template:
     src: haproxy.cfg.j2
     dest: /etc/haproxy/haproxy.cfg
-
-- name: "copy keepalived template"
-  template:
-    src: "keepalived.conf_{{ priority_type }}.j2"
-    dest: /etc/keepalived/keepalived.conf
 
 - name: "enable keepalived"
   ansible.builtin.service:
