@@ -44,10 +44,10 @@ frontend stats
 
 frontend k8s_api_lb
   bind {{ k8s_controlPlane_Endpoint }}:6443
-  mode http
-  option httplog
+  mode tcp
+  option tcplog
   default_backend k8s_masters
-  log-format '{"type":"haproxy","timestamp":%Ts,"http_status":%ST,"http_request":"%r","remote_addr":"%ci","bytes_read":%B,"upstream_addr":"%si","backend_name":"%b","retries":%rc,"bytes_uploaded":%U,"upstream_response_time":"%Tr","upstream_connect_time":"%Tc","session_duration":"%Tt","termination_state":"%ts"}'
+  #log-format '{"type":"haproxy","timestamp":%Ts,"http_status":%ST,"http_request":"%r","remote_addr":"%ci","bytes_read":%B,"upstream_addr":"%si","backend_name":"%b","retries":%rc,"bytes_uploaded":%U,"upstream_response_time":"%Tr","upstream_connect_time":"%Tc","session_duration":"%Tt","termination_state":"%ts"}'
 
 frontend k8s_ingress
   bind {{ k8s_controlPlane_Endpoint }}:443
@@ -59,7 +59,7 @@ backend k8s_masters
   option httpchk
   http-check send meth GET  uri /readyz
   http-check expect status 200
-  mode http
+  mode tcp
   balance roundrobin
   server {{ master_pref }}-00 {{ master0_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
   server {{ master_pref }}-01 {{ master1_ip }}:6443 check inter 5s  fall 5  rise 5 check-ssl verify none
