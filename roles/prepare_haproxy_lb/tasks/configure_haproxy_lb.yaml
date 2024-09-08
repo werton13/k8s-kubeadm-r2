@@ -4,7 +4,8 @@
         priority_type: master
 
     - name: "display priority_type"
-      debug: "{{ inventory_hostname is priority_type }}"
+      debug:
+        msg: "{{ inventory_hostname is priority_type }}"
 
     - name: "copy keepalived template"
       template:
@@ -14,11 +15,14 @@
   when: inventory_hostname == groups.haproxy[0]
 
 - block:
-  - name: "set node priority type master" #master or backup
+  - name: "set node priority type backup" #master or backup
     set_fact:
       priority_type: backup
+
   - name: "display priority_type"
-    debug: "{{ inventory_hostname is priority_type }}"
+    debug:
+      msg: "{{ inventory_hostname is priority_type }}"
+      
   - name: "copy keepalived template"
     template:
       src: "keepalived.conf_{{ priority_type }}.j2"
