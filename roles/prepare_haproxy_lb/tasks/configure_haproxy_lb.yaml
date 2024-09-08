@@ -5,7 +5,7 @@
 
     - name: "display priority_type"
       debug:
-        msg: "{{ inventory_hostname is priority_type }}"
+        msg: "{{ inventory_hostname }} is {{ priority_type }}"
 
     - name: "copy keepalived template"
       template:
@@ -21,8 +21,8 @@
 
   - name: "display priority_type"
     debug:
-      msg: "{{ inventory_hostname is priority_type }}"
-      
+      msg: "{{ inventory_hostname }} is {{ priority_type }}"
+
   - name: "copy keepalived template"
     template:
       src: "keepalived.conf_{{ priority_type }}.j2"
