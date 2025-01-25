@@ -4,29 +4,51 @@
       path: "/home/{{ os_admin_username }}/k8s_addons/ingress"
       state: directory
       mode: '0644'
-
-  - name:  "STAGE_[ 11.4 of 18 ] --- create kubernetes services ingress manifests"
-    template:
-      src: ./templates/k8s_ingress_manifest.yaml.j2
-      dest: "/home/{{ os_admin_username }}/k8s_addons/ingress/k8s_ingress_manifest.yaml"
-      mode: '0644'
-
-  - name:  "STAGE_[ 11.5 of 18 ] --- Wait till Ingress controller deployment  replicas be greater than 0"
-    shell: | 
-      sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf -n ingress-nginx get deployment ingress-nginx-controller -o jsonpath='{.status.availableReplicas}'  
-    register: ingress_replicas_available
-    until: ingress_replicas_available.stdout | int > 0
-    retries: 15
-    delay: 10
-    tags: wait_ingress
-
-  - name:  "STAGE_[ 11.6 of 18 ] --- Apply Ingress manifests"
-    kubernetes.core.k8s:
-      kubeconfig: "/etc/kubernetes/admin.conf"
-      state: present
-      src: "{{ item }}"
-    loop:
-      - "/home/{{ os_admin_username }}/k8s_addons/ingress/k8s_ingress_manifest.yaml"
+  - block:
+    - name:  "STAGE_[ 11.4 of 18 ] --- create OBS services ingress manifests"
+      template:
+        src: ./templates/k8s_obs_ingress_manifest.yaml.j2
+        dest: "/home/{{ os_admin_username }}/k8s_addons/ingress/k8s_obs_ingress_manifest.yaml"
+        mode: '0644'
   
+    - name:  "STAGE_[ 11.5 of 18 ] --- Wait till Ingress controller deployment  replicas be greater than 0"
+      shell: | 
+        sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf -n ingress-nginx get deployment ingress-nginx-controller -o jsonpath='{.status.availableReplicas}'  
+      register: ingress_replicas_available
+      until: ingress_replicas_available.stdout | int > 0
+      retries: 15
+      delay: 10
+      tags: wait_ingress_ctr
+  
+    - name:  "STAGE_[ 11.6 of 18 ] --- Apply Ingress manifests"
+      kubernetes.core.k8s:
+        kubeconfig: "/etc/kubernetes/admin.conf"
+        state: present
+        src: "/home/{{ os_admin_username }}/k8s_addons/ingress/k8s_obs_ingress_manifest.yaml"
+    when: obs_type = "prom_stack"
+
+#  - name:  "STAGE_[ 11.4 of 18 ] --- create kubernetes services ingress manifests"
+#    template:
+#      src: ./templates/k8s_ingress_manifest.yaml.j2
+#      dest: "/home/{{ os_admin_username }}/k8s_addons/ingress/k8s_ingress_manifest.yaml"
+#      mode: '0644'
+#
+#  - name:  "STAGE_[ 11.5 of 18 ] --- Wait till Ingress controller deployment  replicas be greater than 0"
+#    shell: | 
+#      sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf -n ingress-nginx get deployment ingress-nginx-controller -o jsonpath='{.status.availableReplicas}'  
+#    register: ingress_replicas_available
+#    until: ingress_replicas_available.stdout | int > 0
+#    retries: 15
+#    delay: 10
+#    tags: wait_ingress
+#
+#  - name:  "STAGE_[ 11.6 of 18 ] --- Apply Ingress manifests"
+#    kubernetes.core.k8s:
+#      kubeconfig: "/etc/kubernetes/admin.conf"
+#      state: present
+#      src: "{{ item }}"
+#    loop:
+#      - "/home/{{ os_admin_username }}/k8s_addons/ingress/k8s_ingress_manifest.yaml"
+#  
 
 
