@@ -25,7 +25,7 @@
         kubeconfig: "/etc/kubernetes/admin.conf"
         state: present
         src: "/home/{{ os_admin_username }}/k8s_addons/ingress/k8s_obs_ingress_manifest.yaml"
-    when: obs_type = "prom_stack"
+    when: obs_type  is search("prom_stack") 
 
 #  - name:  "STAGE_[ 11.4 of 18 ] --- create kubernetes services ingress manifests"
 #    template:
