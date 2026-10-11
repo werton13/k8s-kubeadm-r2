@@ -54,31 +54,52 @@
 # change DNS server in the netplan config to IP specifical in the target environment
     - name: "search netplan file with defined dns configuration"
       shell: |
-        grep -ilr "{{ def_dns  }}" /etc/netplan
+        grep -ilr "{{ def_dns | default('8.8.8.8') }}" /etc/netplan 2>/dev/null | head -n 1
       register: netplan_path
-      failed_when: netplan_path.rc not in [ 0, 1 ]
+      failed_when: false
 
     - name: "show detected netplan file path"
       debug:
         msg:
           - "netplan config found in:"
-          - "{{ netplan_path.stdout  }}"
-          
+          - "{{ netplan_path.stdout }}"
+
     - name: "get all indents before def_dns - as string variable"
       shell: |
-        cat "{{ netplan_path.stdout }}" | grep "{{ def_dns  }}"  | cut -d'-' -f1
+        cat "{{ netplan_path.stdout }}" | grep "{{ def_dns | default('8.8.8.8') }}" | head -n 1 | cut -d'-' -f1
       register: indents
+      when: netplan_path.stdout is defined and netplan_path.stdout != ""
 
     - name: "change dns server to environment specific values"
       replace:
         path: "{{ netplan_path.stdout }}"
-        regexp: "{{ def_dns }}"
-        replace: "{{ env_dns1 }}\n{{ indents.stdout }}- {{ env_dns2 }}" #10spaces -tabs are not accepted by netplan
-      failed_when: netplan_path.rc not in [ 0, 1 ]
+        regexp: "{{ def_dns | default('8.8.8.8') }}"
+        replace: >-
+          {{ env_dns1 }}{% if env_dns2 is defined and env_dns2 %}
+          {{ indents.stdout }}- {{ env_dns2 }}{% endif %}{% if env_dns3 is defined and env_dns3 %}
+          {{ indents.stdout }}- {{ env_dns3 }}{% endif %}
+      when: netplan_path.stdout is defined and netplan_path.stdout != ""
+      failed_when: false
+
+    - name: "ensure /etc/systemd/resolved.conf.d exists"
+      file:
+        path: /etc/systemd/resolved.conf.d
+        state: directory
+        mode: '0755'
+
+    - name: "configure systemd-resolved DNS drop-in"
+      copy:
+        dest: /etc/systemd/resolved.conf.d/dns.conf
+        content: |
+          [Resolve]
+          DNS={{ env_dns1 }} {{ env_dns2 | default('') }} {{ env_dns3 | default('') }}
+        mode: '0644'
 
     - name: "apply netplan after changing DNS configuration"
       shell: |
-        netplan apply
+        netplan apply || true
+        systemctl restart systemd-resolved || true
+
 
 #    - name: "configure sources.list for private registry"
 #      template:
