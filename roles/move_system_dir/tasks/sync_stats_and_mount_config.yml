@@ -35,21 +35,23 @@
     state: absent
 
 - name: "Synchronize source and destination data"
-  ansible.posix.synchronize:
-    src: "{{ item.source }}/"
-    dest: "{{ item.dest }}"
-    compress: false
-    rsync_opts:
-      - "--archive"
-      - "--one-file-system"
-      - "--quiet"
-      - "--partial"
-      - "--progress"
-      - "--hard-links"
-      - "--ignore-missing-args"
-  #    - '--exclude="/var/spool/rsyslog/imfile-state\:*"'
-  delegate_to: "{{ inventory_hostname }}"
-  ignore_errors: true # to ignore file has vanished: "/var/spool/rsyslog/imfile-state:131391:3a7f9ea2e8bdc719"
+  ansible.builtin.command:
+    cmd: >
+      rsync -aHAX --one-file-system --quiet --ignore-missing-args
+      {% if item.excludes is defined %}{% for excl in item.excludes %}--exclude='{{ excl }}' {% endfor %}{% endif %}
+      {{ item.source }}/ {{ item.dest }}/
+  become: true
+
+- name: "Ensure excluded mountpoint directories exist on destination"
+  ansible.builtin.file:
+    path: "{{ item.dest }}{{ exclude_item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ item.excludes | default([]) }}"
+  loop_control:
+    loop_var: exclude_item
+  when: item.excludes is defined
+  become: true
 
 - name: "Get destination directory files count"
   ansible.builtin.shell: "{{ dest_find_files }}"
@@ -69,12 +71,12 @@
     - ( dest_files.stdout.split()[0] | int ) >= ( source_files.stdout.split()[0] | int )
     - ( dest_directories.stdout.split()[0] | int ) >= ( source_directories.stdout.split()[0] | int )
 
-- name: "Error message"
-  ansible.builtin.debug:
+- name: "Fail if synchronization is incomplete"
+  ansible.builtin.fail:
     msg: |
-      WARNING!!! One of the destination measurements is fewer than the source one!!!
-      Source files number is {{ source_files.stdout.split()[0] | int }} - Destination files number is {{ dest_files.stdout.split()[0] | int }}
-      Source sub-directories number is {{ source_directories.stdout.split()[0] | int }} - Destination sub-directories number is {{ dest_directories.stdout.split()[0] | int }}
+      CRITICAL: Data synchronization incomplete for {{ item.source }} -> {{ item.dest }}!
+      Source files: {{ source_files.stdout.split()[0] | int }} vs Destination files: {{ dest_files.stdout.split()[0] | int }}
+      Source dirs: {{ source_directories.stdout.split()[0] | int }} vs Destination dirs: {{ dest_directories.stdout.split()[0] | int }}
   when:
     - ( dest_files.stdout.split()[0] | int ) < ( source_files.stdout.split()[0] | int ) or
       ( dest_directories.stdout.split()[0] | int ) < ( source_directories.stdout.split()[0] | int )
