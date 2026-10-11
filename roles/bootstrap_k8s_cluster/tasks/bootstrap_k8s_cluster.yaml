@@ -1,6 +1,25 @@
 ---
+  # Protection against wiping a live cluster: this stage starts with `kubeadm reset` on all nodes,
+  # so an accidental re-run would destroy etcd and every node. If the cluster is already initialized,
+  # stop here unless a rebuild is requested explicitly with -e k8s_force_reset=true
+  - name: "STAGE_[ 5.0 of 18 ] --- check if the cluster is already initialized"
+    ansible.builtin.stat:
+      path: /etc/kubernetes/admin.conf
+    register: k8s_admin_conf
+
+  - name: "STAGE_[ 5.0 of 18 ] --- stop if the cluster already exists"
+    ansible.builtin.fail:
+      msg: >-
+        Kubernetes is already initialized on {{ inventory_hostname }} (/etc/kubernetes/admin.conf exists).
+        Re-running this stage would run 'kubeadm reset' on ALL nodes and destroy the cluster.
+        To rebuild the cluster intentionally, re-run with: -e k8s_force_reset=true
+    when:
+      - k8s_admin_conf.stat.exists
+      - not (k8s_force_reset | default(false) | bool)
+
   # reset all cluster nodes, not only masters[0]: otherwise a re-run fails on join
-  # (kubelet.conf already exists / port 10250 in use on the other nodes)
+  # (kubelet.conf already exists / port 10250 in use on the other nodes).
+  # On clean nodes (first run) this is a no-op.
   - name: "STAGE_[ 5.1 of 18 ] --- kubeadm reset"
     shell: kubeadm reset -f
     ignore_errors: true
@@ -13,12 +32,22 @@
       dest: /etc/kubernetes/pki/kc-ca.pem
     when: "'mst' in inventory_hostname and (oidc_enabled | default(false) | bool)"
 
+  # remove only the content of /etc/cni/net.d: containerd 2.x watches this directory
+  # and exits if the directory itself is deleted (kubeadm init then fails on CRI preflight)
   - name: "STAGE_[ 5.2 of 18 ] --- clean kubeadm artifacts"
-    ansible.builtin.file:
-      path: "{{ item.1 }}"
-      state: absent
-    delegate_to: "{{ item.0 }}"
-    loop: "{{ (groups.masters + groups.workers) | product(['/etc/cni/net.d/', '/etc/kubernetes/tmp/']) | list }}"
+    ansible.builtin.shell: rm -rf /etc/cni/net.d/* /etc/kubernetes/tmp
+    delegate_to: "{{ item }}"
+    loop: "{{ groups.masters + groups.workers }}"
+
+  - name: "STAGE_[ 5.2 of 18 ] --- wait for containerd CRI to respond on all nodes"
+    ansible.builtin.command: crictl --runtime-endpoint unix:///run/containerd/containerd.sock info
+    delegate_to: "{{ item }}"
+    loop: "{{ groups.masters + groups.workers }}"
+    register: crictl_info
+    until: crictl_info.rc == 0
+    retries: 12
+    delay: 5
+    changed_when: false
 
   - name: "STAGE_[ 5.3 of 18 ] --- copy kubeadm init config"
     template:

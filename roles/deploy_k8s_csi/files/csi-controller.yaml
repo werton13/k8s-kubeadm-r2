@@ -165,6 +165,9 @@ spec:
             - --default-fstype=ext4
             - --timeout=300s
             - --v=5
+            # vCloud CSI advertises VOLUME_ACCESSIBILITY_CONSTRAINTS but reports no node topology;
+            # provisioner v5+ (Topology GA) then fails with "no available topology found"
+            - --immediate-topology=false
           env:
             - name: ADDRESS
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock

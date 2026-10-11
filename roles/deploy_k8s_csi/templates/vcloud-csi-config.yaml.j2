@@ -1,4 +1,5 @@
 ---
+{# clusterid with NO_RDE_ prefix: the cluster is not managed by CSE/CAPVCD, so CSI must not try to update an RDE (otherwise 403 and the controller panics with --upgrade-rde) #}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,5 +12,5 @@ data:
       org: "{{ vcloud_orgname }}"
       vdc: "{{ vcloud_vdc }}"
       vAppName: "{{ vapp_name }}"
-    clusterid: "{{ k8s_cluster_id }}"
+    clusterid: "NO_RDE_{{ k8s_cluster_id }}"
 ...
