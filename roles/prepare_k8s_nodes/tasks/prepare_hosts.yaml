@@ -28,6 +28,29 @@
     - name: "check availability for log"
       ansible.builtin.ping:
 
+    - name: "Disable and mask apt-daily timers to prevent dpkg lock conflicts"
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+        masked: true
+      loop:
+        - apt-daily.timer
+        - apt-daily-upgrade.timer
+        - apt-daily.service
+        - apt-daily-upgrade.service
+      ignore_errors: true
+
+    - name: "Ensure /etc/apt/apt.conf.d/10periodic disables auto updates"
+      copy:
+        dest: /etc/apt/apt.conf.d/10periodic
+        content: |
+          APT::Periodic::Update-Package-Lists "0";
+          APT::Periodic::Download-Upgradeable-Packages "0";
+          APT::Periodic::AutocleanInterval "0";
+          APT::Periodic::Unattended-Upgrade "0";
+        mode: '0644'
+
 # change DNS server in the netplan config to IP specifical in the target environment
     - name: "search netplan file with defined dns configuration"
       shell: |
