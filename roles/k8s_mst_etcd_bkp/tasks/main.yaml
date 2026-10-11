@@ -2,8 +2,8 @@
     file:
       path: "/etcd_backup"
       state: directory
-      owner: kuberadm
-      group: kuberadm
+      owner: "{{ os_admin_username }}"
+      group: "{{ os_admin_username }}"
       mode: '2744'
  
   - name: "copy backup script to /opt/"

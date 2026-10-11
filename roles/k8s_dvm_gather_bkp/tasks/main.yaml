@@ -31,7 +31,7 @@
 
 - name: "deploy ssh pub key bkpsvc to masters"
   ansible.posix.authorized_key:
-    user: kuberadm
+    user: "{{ os_admin_username }}"
     key: "{{ ssh_key.stdout }}"
   delegate_to: "{{ item }}"
   loop:  "{{ groups.masters }}"

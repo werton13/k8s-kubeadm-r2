@@ -1,4 +1,11 @@
 ---
+  - name: "STAGE_[ 7.0 of 18 ] --- check vApp name for vCloud CSI"
+    ansible.builtin.assert:
+      that:
+        - vapp_name is defined
+        - vapp_name | length > 0
+      fail_msg: "vapp_name is empty: vCloud CSI looks up node VMs inside this vApp (set vcloud.vapp_name in tfvars)"
+
   - name: "STAGE_[ 7.1 of 18 ] --- create folder for vcloud CSI"
     file:
       path: "/home/{{ os_admin_username }}/k8s_addons/vcloud_csi"
@@ -49,20 +56,5 @@
       - storage_class.yaml
     tags: apply_csi_manifests
     
-  - name:  "STAGE_[ 7.7 of 18 ] --- Patch csi-vcd-controllerplugin dnsPolicy"
-    kubernetes.core.k8s_json_patch:
-      kind: Deployment
-      namespace: kube-system
-      kubeconfig: "/etc/kubernetes/admin.conf"
-      name: csi-vcd-controllerplugin
-      patch:
-        - op: replace
-          path: /spec/template/spec/dnsPolicy
-          value: ClusterFirst
+  # dnsPolicy: ClusterFirst is set directly in files/csi-controller.yaml (former STAGE 7.7 patch)
 
-
-#    shell: |
-#      kubectl --kubeconfig=/etc/kubernetes/admin.conf -n kube-system patch deploy csi-vcd-controllerplugin -p '{"spec": {"template": {"spec": {"dnsPolicy": "ClusterFirst" }}}}'
-
-
-        

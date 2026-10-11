@@ -1,7 +1,11 @@
 ---
+  # reset all cluster nodes, not only masters[0]: otherwise a re-run fails on join
+  # (kubelet.conf already exists / port 10250 in use on the other nodes)
   - name: "STAGE_[ 5.1 of 18 ] --- kubeadm reset"
     shell: kubeadm reset -f
     ignore_errors: true
+    delegate_to: "{{ item }}"
+    loop: "{{ groups.masters + groups.workers }}"
 
   - name: "copy oidc CA file"
     copy:
@@ -11,11 +15,10 @@
 
   - name: "STAGE_[ 5.2 of 18 ] --- clean kubeadm artifacts"
     ansible.builtin.file:
-      path: "{{ item }}"
+      path: "{{ item.1 }}"
       state: absent
-    loop:
-      - /etc/cni/net.d/
-      - /etc/kubernetes/tmp/
+    delegate_to: "{{ item.0 }}"
+    loop: "{{ (groups.masters + groups.workers) | product(['/etc/cni/net.d/', '/etc/kubernetes/tmp/']) | list }}"
 
   - name: "STAGE_[ 5.3 of 18 ] --- copy kubeadm init config"
     template:
@@ -26,9 +29,9 @@
   - name: "STAGE_[ 5.4 of 18 ] --- kubernetes cluster bootstrap"
     shell: |
       kubeadm init --config "/home/{{ os_admin_username }}/cluster_init_config_{{ k8s_version[1:] }}.yaml" --upload-certs
+    # no retries: after a partial init a retry only fails on preflight
+    # ("manifests already exist") and hides the real error of the first attempt
     register: kubeadm_init_out
-    retries: 3
-    delay: 10
 
   - name: "STAGE_[ 5.5 of 18 ] --- generate worker join command"
     command: kubeadm token create --print-join-command

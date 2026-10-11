@@ -89,6 +89,43 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+# external resizer
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-resizer-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-resizer-binding
+subjects:
+  - kind: ServiceAccount
+    name: csi-vcd-controller-sa
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: csi-resizer-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -105,10 +142,10 @@ spec:
         app: csi-vcd-controllerplugin
     spec:
       serviceAccount: csi-vcd-controller-sa
-      dnsPolicy: Default
+      dnsPolicy: ClusterFirst
       containers:
         - name: csi-attacher
-          image: registry.k8s.io/sig-storage/csi-attacher:v3.2.1
+          image: registry.k8s.io/sig-storage/csi-attacher:v4.13.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -121,7 +158,7 @@ spec:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-provisioner
-          image: registry.k8s.io/sig-storage/csi-provisioner:v2.2.2
+          image: registry.k8s.io/sig-storage/csi-provisioner:v6.4.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -134,20 +171,32 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
+        - name: csi-resizer
+          image: registry.k8s.io/sig-storage/csi-resizer:v2.3.0
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--timeout=30s"
+            - "--v=5"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: vcd-csi-plugin
           securityContext:
             privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: projects.registry.vmware.com/vmware-cloud-director/cloud-director-named-disk-csi-driver:1.5.0
+          image: projects.registry.vmware.com/vmware-cloud-director/cloud-director-named-disk-csi-driver:1.6.0
           imagePullPolicy: IfNotPresent
           command:
             - /opt/vcloud/bin/cloud-director-named-disk-csi-driver
             - --cloud-config=/etc/kubernetes/vcloud/vcloud-csi-config.yaml
             - --endpoint=$(CSI_ENDPOINT)
             - --upgrade-rde
-            - --v=5
           env:
             - name: NODE_ID
               valueFrom:
@@ -200,3 +249,28 @@ spec:
         - name: vcloud-basic-auth-volume
           secret:
             secretName: vcloud-basic-auth
+---
+# Extra permissions required by newer sidecars than the ones shipped with CSI 1.6.0:
+# csi-provisioner v6.x watches volumeattachments, csi-resizer v2.x watches volumeattributesclasses
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-vcd-sidecars-extra-role
+rules:
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments", "volumeattributesclasses"]
+    verbs: ["get", "list", "watch"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-vcd-sidecars-extra-binding
+subjects:
+  - kind: ServiceAccount
+    name: csi-vcd-controller-sa
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: csi-vcd-sidecars-extra-role
+  apiGroup: rbac.authorization.k8s.io

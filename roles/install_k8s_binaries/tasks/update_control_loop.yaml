@@ -20,7 +20,7 @@
   - name: "install gpg pub key for a target K8s version"
     ansible.builtin.get_url:
       url: "{{ gpg_key_url }}" #"{{ versions.K8s[k8s_version]['gpg_key_url'] }}"
-      dest: "/etc/apt/keyrings/kubernetes-apt-keyring.gpg" #"/usr/share/keyrings/kubernetes-apt-keyring.gpg"
+      dest: "/etc/apt/keyrings/kubernetes-apt-keyring.asc" #"/usr/share/keyrings/kubernetes-apt-keyring.asc"
       mode: '0644'
     tags:
       - repoadd

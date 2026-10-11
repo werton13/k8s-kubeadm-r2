@@ -1,3 +1,0 @@
----
-# defaults file for dvm-config
-#versions: "{{ lookup('file', '../../vars/versions.yaml' ) | from_yaml }}"

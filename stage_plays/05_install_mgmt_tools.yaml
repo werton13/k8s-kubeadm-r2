@@ -5,7 +5,7 @@
   pre_tasks:
     - name:  "STAGE_[ 2 of 18 ]- install HELM v binaries on master nodes"
       debug:
-        msg: "STAGE_[ 2 of 18 ]- install HELM v {{ helm_version }} binaries on master nodes"
+        msg: "STAGE_[ 2 of 18 ]- install HELM {{ helm_version | default('(role default)') }} binaries on master nodes"
   tasks:
     - name: "install etcd binaries"
       include_role:

@@ -18,7 +18,7 @@ fi
 if [ ! -d "$BACKUP_DIR" ]; then
     echo "Creating directory $BACKUP_DIR."
     mkdir -p "$BACKUP_DIR"
-    chown kuberadm: /etcd_backup
+    chown k8sadmin: /etcd_backup
     chmod g+s /etcd_backup/
     
 fi

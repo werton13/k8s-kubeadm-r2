@@ -3,8 +3,8 @@
   file:
     path: "/home/{{ os_admin_username }}/coredns_cfg/"
     state: directory
-    owner: kuberadm
-    group: kuberadm
+    owner: "{{ os_admin_username }}"
+    group: "{{ os_admin_username }}"
     mode: '0744'
 
 - name: "backup and delete coredns config map"

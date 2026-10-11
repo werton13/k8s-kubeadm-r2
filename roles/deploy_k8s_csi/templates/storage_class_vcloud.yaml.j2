@@ -7,6 +7,7 @@ metadata:
   name: "{{ sc_name }}"
 provisioner: named-disk.csi.cloud-director.vmware.com
 reclaimPolicy: Delete
+allowVolumeExpansion: true
 parameters:
   storageProfile: "{{ sc_storage_policy_name }}"
   filesystem: "ext4"

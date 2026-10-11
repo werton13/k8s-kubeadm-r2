@@ -24,7 +24,7 @@
     ansible.builtin.get_url:
 #      url: "{{ versions.K8s[k8s_version]['gpg_key_url'] }}"
       url: "{{ gpg_key_url }}"
-      dest: "/etc/apt/keyrings/kubernetes-apt-keyring.gpg" #"/usr/share/keyrings/kubernetes-apt-keyring.gpg"
+      dest: "/etc/apt/keyrings/kubernetes-apt-keyring.asc" #"/usr/share/keyrings/kubernetes-apt-keyring.asc"
       mode: '0644'
     tags:
       - repoadd_dvm
@@ -32,13 +32,13 @@
 
 #  - name: "dearmor gpg"
 #    shell: |
-#      gpg --dearmor < /etc/apt/keyrings/Release.key -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+#      gpg --dearmor < /etc/apt/keyrings/Release.key -o /etc/apt/keyrings/kubernetes-apt-keyring.asc
 #      rm /etc/apt/keyrings/Release.key
       
 
   - name: "STAGE_[ 15.3 of 18 ] --- DVM host - add the Kubernetes apt repository"
 #    ansible.builtin.apt_repository:
-#      repo: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /'
+#      repo: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /'
 #      #repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
 #      state: present
 #      filename: kubernetes
@@ -133,21 +133,22 @@
     copy:
       dest: "/home/{{ os_admin_username }}/.kube/config"
       owner: "{{ os_admin_username }}"
+      mode: '0600'
       content: |
          {{ kubeconfig.content | b64decode }}
     tags: get_kubeconfig
 
-    when: (oidc_enabled | default(false) | bool)
   - name: "get cert data"
     shell: |
       cat /home/{{ os_admin_username }}/.kube/config  | yq -r '.clusters[0].cluster."certificate-authority-data"'
     register: certdata
-
     when: (oidc_enabled | default(false) | bool)
+
   - name: "create OIDC kubeconfig from template and certdata from ADMIN kubeconfig"
     template:
       src: oidc_config.j2
       dest: /home/{{ os_admin_username }}/.oidc_config_l2
+    when: (oidc_enabled | default(false) | bool)
 
 
   
