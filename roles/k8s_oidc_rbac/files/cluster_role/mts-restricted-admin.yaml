@@ -1,0 +1,28 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mts-admin
+rules:
+  # =============================================
+  # Full cluster access (except nodes)
+  # =============================================
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+  # =============================================
+  # Non-resource URLs
+  # =============================================
+  - nonResourceURLs: ["*"]
+    verbs: ["*"]
+
+  # =============================================
+  # Node restrictions (read-only)
+  # =============================================
+  - apiGroups: [""]
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch

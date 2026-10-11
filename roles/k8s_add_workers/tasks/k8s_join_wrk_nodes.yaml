@@ -22,3 +22,10 @@
   - name: "get new workers-nodes ready status"
     include_tasks: get_node_ready_status.yaml
     loop: "{{ groups.new_workers }}"
+
+  - name: "label worker nodes without labels - with node-role.kubernetes.io/worker"
+    shell: >
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf 
+      label nodes --selector '!node-role.kubernetes.io/control-plane,!node-role.kubernetes.io/worker'
+      node-role.kubernetes.io/worker=""
+

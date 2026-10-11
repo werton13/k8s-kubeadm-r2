@@ -1,0 +1,12 @@
+# code: language=ansible
+---
+galaxy_info:
+  author: "Anatoliy Kopylov"
+  description: "Configure PV/VG/LV, make FS and mount it"
+  min_ansible_version: "2.14.3"
+  license: BSD
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy

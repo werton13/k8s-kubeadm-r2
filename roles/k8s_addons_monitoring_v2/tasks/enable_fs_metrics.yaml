@@ -1,0 +1,71 @@
+---
+#  - hosts: masters:workers
+#    become: true
+#    tasks:
+- name: "create directory for script fs metrics script"
+  file:
+    path: "/opt/scripts/"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ item }}"
+  loop: "{{ groups.masters + groups.workers }}"
+
+- name: "create directory fs metrics text files"
+  file:
+    path: "/var/lib/prometheus_metrics_txt/"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ item }}"
+  loop: "{{ groups.masters + groups.workers }}"
+
+- name: "copy metrics script file"
+  copy:
+    src: write_fs_metric.sh
+    dest: /opt/scripts/write_fs_metric.sh
+    mode:  '0755'
+  delegate_to: "{{ item }}"
+  loop: "{{ groups.masters + groups.workers }}"
+
+- name: "create cron task to run metrics script each 5 min"
+  ansible.builtin.cron:
+    name: "write fs metric"
+    state: "present"
+    job: "/opt/scripts/write_fs_metric.sh"
+    minute: "5"
+    user: root
+  delegate_to: "{{ item }}"
+  loop: "{{ groups.masters + groups.workers }}"
+
+- name: "reload cron config"
+  shell: |
+     service cron reload
+  delegate_to: "{{ item }}"
+  loop: "{{ groups.masters + groups.workers }}"
+
+- name: "restart cron"
+  ansible.builtin.service:
+    name: "cron"
+    state: restarted
+  delegate_to: "{{ item }}"
+  loop: "{{ groups.masters + groups.workers }}"
+   
+#  - hosts: masters[0]
+#    become: true
+#    tasks:
+- name: "patch node-exporter ds to enable textfile collector"
+  kubernetes.core.k8s_json_patch:
+    kubeconfig: "/etc/kubernetes/admin.conf"
+    kind: DaemonSet
+    namespace: victoria-monitoring
+    name: prometheus-node-exporter
+    patch:
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: "--collector.textfile.directory=/var/lib/prometheus_metrics_txt"
+      - op: add
+        path: "/spec/template/spec/volumes/-"
+        value: {"name": "textfile-collector-data", "hostPath":{"path": "/var/lib/prometheus_metrics_txt/","type": "DirectoryOrCreate"}}
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts/-
+        value: {"name": "textfile-collector-data","mountPath": "/var/lib/prometheus_metrics_txt/"}
+

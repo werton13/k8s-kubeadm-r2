@@ -1,0 +1,102 @@
+---
+- name: "Create directory for vmagent and vm_charts config"
+  file:
+    path: "/home/{{ os_admin_username }}/k8s_addons/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - vm_charts
+    - vmagent
+
+- name: "Copy values files for monitoring charts"
+  template:
+    src: "{{ values_file }}"
+    dest: "/home/{{ os_admin_username }}/k8s_addons/vm_charts/{{ values_file | basename | regex_replace('\\.j2$', '') }}"
+  loop: "{{ query('fileglob', '../templates/*_values.yaml.j2') }}"
+  loop_control:
+    loop_var: values_file
+
+- name: "Copy VictoriaMetrics additional components manifests"
+  copy:
+    src: "{{ item }}"
+    dest: "/home/{{ os_admin_username }}/k8s_addons/"
+    directory_mode: true
+  loop:
+    - etcd-proxy-server
+    - vmservicescrapes
+  ignore_errors: true
+
+- name: "Copy vmagent configuration manifest from template"
+  template:
+    src: vmagent.yaml.j2
+    dest: "/home/{{ os_admin_username }}/k8s_addons/vmagent/vmagent.yaml"
+    mode: '0644'
+
+- name: "Install monitoring Helm charts from public repositories"
+  include_tasks: install_util_charts.yaml
+  loop:
+    - { chart_name: 'victoria-metrics-operator',
+        repo_name: 'vm',
+        repo_url: 'https://victoriametrics.github.io/helm-charts',
+        chart_namespace: 'victoria-monitoring',
+        values_file: 'victoria-metrics-operator_values.yaml' }
+    - { chart_name: 'kube-state-metrics',
+        repo_name: 'prometheus-community',
+        repo_url: 'https://prometheus-community.github.io/helm-charts',
+        chart_namespace: 'victoria-monitoring',
+        values_file: '' }
+    - { chart_name: 'prometheus-node-exporter',
+        repo_name: 'prometheus-community',
+        repo_url: 'https://prometheus-community.github.io/helm-charts',
+        chart_namespace: 'victoria-monitoring',
+        values_file: '' }
+    - { chart_name: 'x509-certificate-exporter',
+        repo_name: 'enix',
+        repo_url: 'https://charts.enix.io',
+        chart_namespace: 'victoria-monitoring',
+        values_file: 'x509_exporter_values.yaml' }
+
+- name: "Create vmagent instance"
+  kubernetes.core.k8s:
+    kubeconfig: "/etc/kubernetes/admin.conf"
+    state: present
+    src: "/home/{{ os_admin_username }}/k8s_addons/vmagent/vmagent.yaml"
+
+- name: "Find vmscrape config files"
+  find:
+    paths: "/home/{{ os_admin_username }}/k8s_addons/vmservicescrapes"
+    patterns: '*.yaml'
+  register: scrape_files
+
+- name: "Create VictoriaMetrics service scrapes"
+  kubernetes.core.k8s:
+    kubeconfig: "/etc/kubernetes/admin.conf"
+    state: present
+    src: "{{ item.path }}"
+  loop: "{{ scrape_files.files }}"
+  when: scrape_files.matched > 0
+
+- name: "Deploy etcd-proxy-server if present"
+  kubernetes.core.k8s:
+    kubeconfig: "/etc/kubernetes/admin.conf"
+    state: present
+    src: "/home/{{ os_admin_username }}/k8s_addons/etcd-proxy-server/etcd-proxy.yaml"
+  ignore_errors: true
+
+- name: "Enable Calico Felix Prometheus metrics"
+  kubernetes.core.k8s_json_patch:
+    kind: FelixConfiguration
+    namespace: default
+    kubeconfig: "/etc/kubernetes/admin.conf"
+    name: default
+    patch:
+      - op: add
+        path: "/spec/prometheusMetricsEnabled"
+        value: true
+      - op: add
+        path: "/spec/prometheusMetricsHost"
+        value: '0.0.0.0'
+      - op: add
+        path: '/spec/prometheusMetricsPort'
+        value: 9091
+  ignore_errors: true

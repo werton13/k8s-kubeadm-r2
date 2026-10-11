@@ -1,0 +1,13 @@
+---
+- hosts: masters
+  gather_facts: true
+  become: true
+  tasks:
+    - name: "configure etcd database snapshots backup for each master node"
+      include_role:
+        name: ../roles/k8s_mst_etcd_bkp
+#        vars:
+          
+
+#  roles:
+#    - k8s_mst_etcd_bkp

@@ -1,0 +1,40 @@
+# code: language=ansible
+---
+- name: "Create PV and VG"
+  community.general.lvg:
+    vg: "{{ item.vg_name }}"
+    pvs: "/dev/{{ item.disk }}"
+
+- name: "Create logical volume"
+  community.general.lvol:
+    lv: "{{ item.lvm_name }}"
+    vg: "{{ item.vg_name }}"
+    state: present
+    shrink: false
+    size: 100%FREE
+
+- name: "Create file system"
+  community.general.filesystem:
+    dev: "/dev/mapper/{{ item.vg_name }}-{{ item.lvm_name }}"
+    fstype: "{{ item.fs_type }}"
+    state: present
+
+- name: 'Mount file systems'
+  ansible.posix.mount:
+    path: "{{ item.mount_path }}"
+    src: "/dev/mapper/{{ item.vg_name }}-{{ item.lvm_name }}"
+    state: mounted
+    fstype: "{{ item.fs_type }}"
+##debug temp
+
+- name: "get current fstab state"
+  shell: |
+    cat /etc/fstab
+  register: fstab_state
+
+- name: "show registered fstab_state"
+  debug:
+    msg:
+      - "Fstab content:"
+      - "{{ fstab_state.stdout_lines }}"
+

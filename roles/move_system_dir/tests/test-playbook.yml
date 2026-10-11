@@ -1,0 +1,17 @@
+# code: language=ansible
+---
+- name: "Move sytem directories to separate volumes"
+  hosts: all
+  vars:
+    move_system_dir_config:
+      - source: /var
+        dest: /data1
+        excludes:
+          - /lib
+          - /snap
+      - source: /var/lib
+        dest: /data2
+      - source: /var/snap
+        dest: /data3
+  roles:
+    - move_system_dir

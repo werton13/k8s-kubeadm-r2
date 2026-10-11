@@ -1,0 +1,21 @@
+# code: language=ansible
+# IMPORTANT: Do not use dashes "-" in VG and LV names!
+# Otherwise an LV path would be like "mydata1--vg-mydata1--lv", so linux will change single dash to the double one.
+# Underscore is a good choice to separate words in a LV name.
+---
+- name: "Configure LVMs, FSes and mount them"
+  hosts: all
+  vars:
+    configure_lvm_and_fs_storages:
+      - disk: sdb
+        vg_name: data1_vg
+        lvm_name: data1_lv
+        fs_type: ext4
+        mount_path: /data1
+      - disk: sdc
+        vg_name: data2_vg
+        lvm_name: data2_lv
+        fs_type: ext4
+        mount_path: /data2
+  roles:
+    - configure_lvm_and_fs

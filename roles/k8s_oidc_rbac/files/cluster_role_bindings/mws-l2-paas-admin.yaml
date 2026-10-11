@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mws-l2-paas-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: CN=0000 G K8S L2PaaS,OU=Groups,OU=mts-k8s,OU=00,OU=00,OU=Systems,DC=msk,DC=mts,DC=ru

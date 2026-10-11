@@ -1,0 +1,9 @@
+---
+- hosts: "{{ 'haproxy' if ('haproxy' in groups and groups['haproxy'] | length > 0) else 'dvm' }}"
+  gather_facts: true
+  become: true
+  tasks:
+    - name: "Configure HAProxy and Keepalived load balancer"
+      include_role:
+        name: ../roles/prepare_haproxy_lb
+      when: ('haproxy' in groups and groups['haproxy'] | length > 0)

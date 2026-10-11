@@ -1,0 +1,91 @@
+- hosts: dvm
+  gather_facts: false
+  become: false
+  tasks:
+    - name: "wait all nodes availability before K8s binaries install"
+      include_role:
+        name: ../roles/wait_nodes
+      vars:
+        nodes: "{{ groups.masters + groups.workers }}"
+        # NEED TO ADD CHECK RESULT AND STOP IF SOME NODES FAILED!
+
+# install K8s binaries
+- hosts: masters:workers
+  #serial: 10
+  gather_facts: true
+  become: true
+  tasks:
+    - name: "install Kubernetes main binaries"
+      include_role:
+        name: ../roles/install_k8s_binaries
+    
+# sometimes some nodes from masters:workers are not processed in the previous step, this situation will cause fail
+# in Kubernetes cluster bootstrap role. To handle this, next block will:
+#   - check if somehost's was'nt processed with K8s components install
+#   - create list of such hosts
+#   - call install_k8s_binaries role for those hosts
+
+    # check install state of kubeadm and register result
+    - name: "check if k8s binaries was installed - if kubeadm is absent - host counted as unready for processing"
+      stat:
+        path: "/usr/bin/kubeadm"
+      register: k8s_binfile_state
+    
+    # if kubeadm was not found - set fact no_kubeadm with hostname as value
+    - name: "add hosts without kubeadm component to retry_hosts variable"
+      set_fact:
+        no_kubeadm: "{{  inventory_hostname  }}"
+      when: k8s_binfile_state.stat.exists == false
+
+- hosts: dvm
+  become: true
+  vars:
+    # this variable extract facts from all workers+masters group, where no_kubeadm was defined
+    # combine it, parse and compose new host group, which contain hosts without kubeadm
+    kube_install_retry_hosts: >-
+        {{
+          ((groups["workers"] | list + groups["masters"]| list)
+          | map("extract", hostvars)
+          | selectattr("no_kubeadm", "defined") | map(attribute="no_kubeadm")
+          | string
+          | combine
+          | replace("'","")
+          | replace("[","")
+          | replace(" ","")
+          | replace("]","")
+          ).split(',')
+        }}
+  tasks:
+    - name: "show retry_hosts content"
+      debug:
+        msg:
+          - "total count of hosts to retry: {{ kube_install_retry_hosts | length }}"
+          - "{{ kube_install_retry_hosts }}"
+
+    - name: "install Kubernetes main binaries on nodes without kubeadm, after first install iteration"
+      include_role:
+        name: ../roles/install_k8s_binaries
+        apply:
+          delegate_to: "{{ retry_node  }}"
+      loop: "{{ kube_install_retry_hosts }}"
+      loop_control:
+        loop_var: retry_node
+      when: (kube_install_retry_hosts | length >= 1 and kube_install_retry_hosts is not search("''")) 
+      #when: (kube_install_retry_hosts | length == 1 and kube_install_retry_hosts is search("''")) 
+
+- hosts: masters:workers
+  #serial: 10
+  gather_facts: true
+  become: true
+  tasks:
+    # additional check after after kubernetres components installation and possible secont iteration
+    - name: "check k8s binaries was installed"
+      stat:
+        path: "/usr/bin/{{ item }}"
+      loop:
+        - 'kubelet'
+        - 'kubeadm'
+      register: k8s_binfile_state
+      until: k8s_binfile_state.stat.exists == true
+      retries: 100
+      delay: 15

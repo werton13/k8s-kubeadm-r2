@@ -1,0 +1,12 @@
+# code: language=ansible
+---
+move_system_dir_config:
+  - source: /var
+    dest: /data1
+    excludes:
+      - /lib
+      - /snap
+  - source: /var/lib
+    dest: /data2
+  - source: /var/snap
+    dest: /data3

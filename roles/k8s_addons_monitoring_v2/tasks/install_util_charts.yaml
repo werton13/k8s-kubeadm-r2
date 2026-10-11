@@ -1,0 +1,27 @@
+---
+- name: "Add Helm repository for chart"
+  kubernetes.core.helm_repository:
+    name: "{{ item.repo_name }}"
+    repo_url: "{{ item.repo_url }}"
+  when: not item.repo_url.startswith('oci://')
+  ignore_errors: true
+
+- name: "Install Helm chart WITH values"
+  kubernetes.core.helm:
+    name: "{{ item.chart_name }}"
+    chart_ref: "{{ item.repo_url if item.repo_url.startswith('oci://') else item.repo_name + '/' + item.chart_name }}"
+    release_namespace: "{{ item.chart_namespace }}"
+    create_namespace: true
+    kubeconfig: "/etc/kubernetes/admin.conf"
+    values_files:
+      - "/home/{{ os_admin_username }}/k8s_addons/vm_charts/{{ item.values_file }}"
+  when: item.values_file is defined and item.values_file != ""
+
+- name: "Install Helm chart WITHOUT values"
+  kubernetes.core.helm:
+    name: "{{ item.chart_name }}"
+    chart_ref: "{{ item.repo_url if item.repo_url.startswith('oci://') else item.repo_name + '/' + item.chart_name }}"
+    release_namespace: "{{ item.chart_namespace }}"
+    create_namespace: true
+    kubeconfig: "/etc/kubernetes/admin.conf"
+  when: item.values_file is not defined or item.values_file == ""

@@ -1,0 +1,4 @@
+---
+# tasks file for list_k8s_nodes
+# display list of all Kubernetes cluster nodes
+- include_tasks: ./list_k8s_nodes.yaml

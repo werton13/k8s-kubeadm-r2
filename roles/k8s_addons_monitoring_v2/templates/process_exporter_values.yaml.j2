@@ -1,0 +1,8 @@
+rbac:
+  pspEnabled: false
+templates:
+  config.yml: |
+    process_names:
+      - name: "{% raw %}{{`{{.Comm}}`}}{% endraw %}"
+        cmdline:
+          - ".*"

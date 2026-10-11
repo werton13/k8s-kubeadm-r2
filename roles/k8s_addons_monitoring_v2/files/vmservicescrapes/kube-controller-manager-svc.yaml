@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kube-controller-manager
+  name: kube-controller-manager
+  namespace: kube-system
+spec:
+  clusterIP: None
+  clusterIPs:
+  - None
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: metrics
+    port: 10257
+    protocol: TCP
+    targetPort: 10257
+  selector:
+    component: kube-controller-manager
+    tier: control-plane
+  sessionAffinity: None
+  type: ClusterIP
+

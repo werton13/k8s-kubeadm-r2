@@ -1,0 +1,62 @@
+---
+# Prepare additional disks and remap /var, /var/lib directories (if disks are attached),
+# prepare OS configuration, kernel parameters and install prerequirements.
+
+- hosts: dvm
+  gather_facts: false
+  become: false
+  tasks:
+    - name: "Wait for all nodes availability"
+      include_role:
+        name: ../roles/wait_nodes
+      vars:
+        nodes: "{{ groups.masters + groups.workers }}"
+
+- hosts: masters:workers
+  gather_facts: true
+  become: true
+  tasks:
+    - name: "Check if additional disks /dev/sdb and /dev/sdc are present"
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /dev/sdb
+        - /dev/sdc
+      register: disk_stats
+
+    - name: "Determine whether to configure secondary disks"
+      set_fact:
+        has_additional_disks: "{{ (disk_stats.results | map(attribute='stat.exists') | select('equalto', true) | list | length) == 2 }}"
+
+    - name: "Log disk configuration mode"
+      debug:
+        msg: "Additional disks present: {{ has_additional_disks }}. Configured via LVM: {{ has_additional_disks }}."
+
+    - name: "Reboot nodes if additional disks detected to settle device paths"
+      ansible.builtin.reboot:
+      when: has_additional_disks | bool
+
+    - name: "Configure LVM and filesystems for /var and /var/lib"
+      include_role:
+        name: ../roles/prepare_k8s_nodes_disks
+      vars:
+        nodes: "{{ groups.masters + groups.workers }}"
+      when: has_additional_disks | bool
+
+- hosts: dvm
+  gather_facts: false
+  become: false
+  tasks:
+    - name: "Wait for all nodes online before OS system configuration"
+      include_role:
+        name: ../roles/wait_nodes
+      vars:
+        nodes: "{{ groups.masters + groups.workers }}"
+
+- hosts: masters:workers
+  gather_facts: true
+  become: true
+  tasks:
+    - name: "STAGE_[ 1.5 of 18 ] --- Prepare OS system configuration and container runtime"
+      import_role:
+        name: ../roles/prepare_k8s_nodes

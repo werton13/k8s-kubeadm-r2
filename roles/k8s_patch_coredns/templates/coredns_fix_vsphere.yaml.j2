@@ -19,6 +19,8 @@ data:
             }
            hosts {
              {{ vsphere_ip }}  {{ vsphere_fqdn  }}
+             {{ lb0_ip }} {{ lb_pref }}-01
+             {{ lb1_ip }} {{ lb_pref }}-02
              fallthrough
             }
 

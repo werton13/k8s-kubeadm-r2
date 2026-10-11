@@ -1,0 +1,6 @@
+# stage_plays/_load_vars.yaml
+#---
+#- name: Load K8s versions
+#  ansible.builtin.include_vars:
+#    file: ../group_vars/versions.yaml
+

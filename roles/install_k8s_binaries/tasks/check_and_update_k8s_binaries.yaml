@@ -1,0 +1,60 @@
+---      
+
+  - name: "set desired version of 'kube*' component from a versions file"
+    set_fact: 
+      desired_version: "{{ k8s_ver | default(k8s_full) }}" #"{{ versions.K8s[k8s_version].full }}"
+    when: item  in ["kubelet","kubectl","kubeadm"]
+
+  - name: "set desired version of 'containerd' component from a versions file"
+    set_fact: 
+      desired_version: "{{ k8s_containerd }}" #"{{ versions.K8s[k8s_version].containerd }}"
+    when: item  == "containerd"
+
+  - name: "set desired version of 'cri-tools*' component from a versions file"
+    set_fact: 
+      desired_version: "{{ k8s_cri_tools }}" #"{{ versions.K8s[k8s_version]['cri-tools'] }}"
+    when: item  == "cri-tools"
+  
+  - name: "display component version currently installed on node"
+    debug:
+      msg:
+        - "desired version of {{ item }}:  {{ desired_version }}" 
+        - "currently installed version of {{ item }}:  {{ vars[item |replace('-','_') + '_cur_ver'] }}" #! need fix for cri-tools
+  
+  # update component version if currently installed version does not match desired version" 
+  - block:
+      - name: "print versions mismatch information"
+        debug:
+          msg: "installed version of {{ item }} does not match desired"
+
+#      - name: "install gpg pub key for a choosed K8s version"
+#        ansible.builtin.get_url:
+#          url: "{{ versions.K8s[k8s_version]['gpg_key_url'] }}"
+#          dest: "/usr/share/keyrings/kubernetes-archive-keyring.gpg"
+#          mode: '0644'
+
+      - name: "unhold kubernetes binarie package from an external loop" 
+        ansible.builtin.dpkg_selections:
+          name: "{{ item }}"
+          selection: install #msg: Failed to find package 'kubectl' to perform selection 'install'.
+        when: vars[item |replace('-','_') + '_cur_ver'] != "none"
+
+      - name: "install kubernetes binarie package from an external loop and update apt"
+        ansible.builtin.apt:
+          update_cache: true
+          name: "{{ item }}={{ desired_version }}"
+          state: present
+          allow_downgrade: true
+
+      - name: "Hold kubernetes binarie package from an external loop - prevent auto updated and removes"
+        ansible.builtin.dpkg_selections:
+          name: "{{ item }}"
+          selection: hold
+    when:   (vars[item |replace('-','_') + '_cur_ver']  != desired_version or vars[item |replace('-','_') + '_cur_ver'] == "none")
+
+  - name: "print versions matching information"
+    debug:
+      msg: 
+        - "installed version of {{ item }} matched desired version"
+        - "update procedure for {{ item }} will not be performed"
+    when:   vars[item |replace('-','_') + '_cur_ver']  == desired_version

@@ -1,0 +1,18 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: x509-certificate-exporter
+  namespace: victoria-monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: x509-certificate-exporter
+      app.kubernetes.io/name: x509-certificate-exporter
+  namespaceSelector:
+    matchNames:
+      - victoria-monitoring
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scheme: http

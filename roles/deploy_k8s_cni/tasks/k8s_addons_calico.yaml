@@ -6,29 +6,35 @@
       state: directory
       mode: '0644'
   - name: "STAGE_[ 6.2 of 18 ] --- download Calico tigera operator manifest"
-    ansible.builtin.get_url:
-      url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
-      dest: "/home/{{ os_admin_username }}/k8s_addons/calico"
+    #ansible.builtin.get_url:
+    #  url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
+    #  dest: "/home/{{ os_admin_username }}/k8s_addons/calico"
+    #  mode: '0644'
+    template:
+      src: tigera_operator_v{{ k8s_version_short.split('.')[0:2] | join('.') }}.yaml.j2
+      dest: "/home/{{ os_admin_username }}/k8s_addons/calico/tigera_operator.yaml"
       mode: '0644'
     tags: calico
   
-  - name: "STAGE_[ 6.3 of 18 ] ---create Calico configuration manifest"
+  - name: "STAGE_[ 6.3 of 18 ] --- create Calico configuration manifest"
     template:
       src: ./templates/calico_config.yaml.j2
       dest: "/home/{{ os_admin_username }}/k8s_addons/calico/calico_config.yaml"
       mode: '0644'
     tags: calico
+
   - name: "STAGE_[ 6.4 of 18 ] --- download calicoctl"
     ansible.builtin.get_url:
-      url: "https://github.com/projectcalico/calico/releases/download/{{ calico_version }}/calicoctl-linux-amd64"
+      url: "{{ calicoctl_url | default('https://github.com/projectcalico/calico/releases/download') }}/{{ calico_version }}/calicoctl-linux-amd64"
       dest: "/usr/local/bin/calicoctl"
       mode: '0755'
     tags: calicoctl
+
   - name: "STAGE_[ 6.5 of 18 ] --- apply Tigera operator manifest"
     kubernetes.core.k8s:
       kubeconfig: "/etc/kubernetes/admin.conf"
       state: present
-      src: "/home/{{ os_admin_username }}/k8s_addons/calico/tigera-operator.yaml"
+      src: "/home/{{ os_admin_username }}/k8s_addons/calico/tigera_operator.yaml"
   
   - name: "STAGE_[ 6.6 of 18 ] --- wait till Tigera operator replicas be greater than 0"
     shell: | 

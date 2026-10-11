@@ -1,0 +1,6 @@
+---
+# tasks file for k8s_addons_ingress
+- name: "STAGE_[ 11 of 18 ] --- install victoria metrics vmagent with CMIS configuration"
+  include_tasks: k8s_addons_vmagent.yaml
+- name: "STAGE_[ 11 of 18 ] --- enable CUSTOM file system metrics for node-exporter"
+  include_tasks:  enable_fs_metrics.yaml

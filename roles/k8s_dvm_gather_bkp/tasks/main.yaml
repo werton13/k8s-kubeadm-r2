@@ -78,7 +78,7 @@
   # day,month - default "*"
   ansible.builtin.cron:
     name: "gather etcd backup files from k8s masters"
-    minute: "0"
+    minute: "30"
     hour: "2"
     user: bkpsvc
     job: "/home/bkpsvc/.scripts/backup_etcd.sh"

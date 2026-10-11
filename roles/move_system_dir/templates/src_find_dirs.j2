@@ -1,0 +1,1 @@
+sudo find {{ item.source }} -type d {% if item.excludes is defined %}{% for i in item.excludes -%} ! -path "{{ item.source }}{{ i }}*" {% endfor %}{% endif %} | wc -l

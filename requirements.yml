@@ -1,2 +1,8 @@
 ---
-- src: geerlingguy.helm
+roles:
+  - src: geerlingguy.helm
+
+collections:
+  - name: kubernetes.core
+  - name: ansible.posix
+  - name: community.general

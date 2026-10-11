@@ -1,0 +1,57 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAgent
+metadata:
+  finalizers:
+  - apps.victoriametrics.com/finalizer
+  name: system
+  namespace: victoria-monitoring
+spec:
+  arbitraryFSAccessThroughSMs: {}
+  externalLabels:
+    k8s_type: {{ k8s_type | default('vcloud') }}
+    k8s_cluster: {{ k8s_cluster_name }}
+    env: {{ env_name | default(label_env_name | default('dev')) }}
+    datacenter: {{ dctr_name | default('vcloud') }}
+    project: {{ project_name | default(label_project_name | default('k8s')) }}
+  extraArgs:
+    loggerLevel: "INFO"
+    loggerFormat: "json"
+{% if remoteWritePassword is defined and remoteWritePassword != "" and remoteWriteUsername is defined and remoteWriteUsername != "" %}
+    remoteWrite.basicAuth.password: {{ remoteWritePassword }}
+    remoteWrite.basicAuth.username: {{ remoteWriteUsername }}
+{% endif %}
+  nodeScrapeNamespaceSelector: {}
+  nodeScrapeSelector: {}
+  podScrapeNamespaceSelector: {}
+  podScrapeSelector: {}
+  probeNamespaceSelector: {}
+  serviceScrapeSelector: {}
+  staticScrapeSelector: {}
+  remoteWrite:
+  - url: {{ remoteWriteUrl }}
+    tlsConfig:
+      insecureSkipVerify: true
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 2500m
+      memory: 1000Mi
+    requests:
+      cpu: 1000m
+      memory: 500Mi
+  scrapeInterval: 10s
+  serviceAccountName: vmoperator-system
+  serviceScrapeNamespaceSelector:
+    matchExpressions:
+      - key: kubernetes.io/metadata.name
+        operator: In
+        values:
+          - victoria-monitoring
+          - kube-system
+          - calico-system
+          - calico-apiserver
+  tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists

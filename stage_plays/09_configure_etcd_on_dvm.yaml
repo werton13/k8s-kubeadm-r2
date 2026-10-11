@@ -1,0 +1,16 @@
+---
+# configure management evironment on DVM 
+- hosts: dvm
+  gather_facts: true
+  become: true
+  tasks:
+    - name: "configure Kubernetes admin environment and install admin tools on dvm"
+      include_role:
+        name: "../roles/{{ item }}"
+      loop:
+        - dvm_config
+        - k8s_dvm_gather_bkp
+
+#  roles:
+#    - dvm_config
+#    - k8s_dvm_gather_bkp

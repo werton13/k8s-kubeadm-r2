@@ -7,8 +7,8 @@ vrrp_script haproxy {
   interval 2
   weight 2
 }
-vrrp_instance 50 {
-  virtual_router_id 50
+vrrp_instance {{ virtual_router_id }} {
+  virtual_router_id {{ virtual_router_id }}
   advert_int 1
   priority 100
   state MASTER

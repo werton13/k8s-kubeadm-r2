@@ -1,0 +1,42 @@
+---
+- hosts: masters[0]
+  gather_facts: true
+  become: true
+  tasks:
+    - name: "Bootstrap K8s cluster and join nodes"
+      include_role:
+        name: ../roles/bootstrap_k8s_cluster
+
+    - name: "List K8s nodes"
+      include_role:
+        name: ../roles/list_k8s_nodes
+
+    - name: "Deploy Calico CNI"
+      include_role:
+        name: ../roles/deploy_k8s_cni
+
+    - name: "Patch CoreDNS for vCloud API resolution"
+      include_role:
+        name: ../roles/k8s_patch_coredns
+
+    - name: "Deploy vCloud / vSphere CSI"
+      include_role:
+        name: ../roles/deploy_k8s_csi
+
+    - name: "Deploy Metrics Server"
+      include_role:
+        name: ../roles/k8s_addons_metrics
+
+    - name: "Deploy Ingress Controller"
+      include_role:
+        name: ../roles/k8s_addons_ingress
+
+    - name: "Deploy VictoriaMetrics observability stack"
+      include_role:
+        name: ../roles/k8s_addons_monitoring_v2
+      when: (obs_type | default('none')) == 'vm_stack'
+
+    - name: "Deploy OIDC RBAC (optional)"
+      include_role:
+        name: ../roles/k8s_oidc_rbac
+      when: (oidc_enabled | default(false) | bool)

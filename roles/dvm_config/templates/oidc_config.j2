@@ -1,0 +1,28 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: {{ certdata.stdout }}
+    server: https://{{ k8s_controlPlane_Endpoint }}:6443
+  name: {{ k8s_cluster_name  }}
+contexts:
+- context:
+    cluster: {{ k8s_cluster_name }}
+    user: isso
+  name: {{ k8s_cluster_name }}
+current-context: {{ k8s_cluster_name  }}
+kind: Config
+preferences: {}
+users:
+- name: isso
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      args:
+      - oidc-login
+      - get-token
+      - --oidc-issuer-url=https://isso.mts.ru/auth/realms/mts
+      - --oidc-client-id=kubernetes-public-cloud
+      - --grant-type=password
+      command: kubectl
+      env: null
+      provideClusterInfo: false

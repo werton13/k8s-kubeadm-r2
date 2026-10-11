@@ -1,1 +1,8 @@
-TODO
+*.retry
+*.log
+.vault_pass*
+.vault_password*
+K8s-inventory
+vars/cluster_vars.yaml
+group_vars/all/vault.yaml
+!group_vars/all/.gitkeep

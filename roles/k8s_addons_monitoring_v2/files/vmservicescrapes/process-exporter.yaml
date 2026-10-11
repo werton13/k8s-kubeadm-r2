@@ -1,0 +1,15 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  labels:
+    app: process-exporter
+  name: process-exporter
+  namespace: victoria-monitoring
+spec:
+  endpoints:
+  - port: metrics
+  jobLabel: process-exporter
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      app: prometheus-process-exporter

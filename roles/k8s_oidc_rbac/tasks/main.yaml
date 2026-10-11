@@ -1,0 +1,32 @@
+---
+  - name: "STAGE_[ XX.x of 18 ] --- create directory for RBAC configs"
+    file:
+      path: "/home/{{ os_admin_username }}/k8s_addons/rbac"
+      state: directory
+      mode: '0644'
+
+  - name: "copy rbac manifests"
+    copy:
+      src: "{{ item }}"
+      dest: "/home/{{ os_admin_username }}/k8s_addons/rbac"
+    with_fileglob:
+      - "cluster_role/*.yaml"
+      - "cluster_role_bindings/*.yaml"
+
+  - name: "find all rbac manifests files to puth them to the list"
+    #kubernetes.core.k8s - dont works with 'with_fileglob' ¯\_(ツ)_/¯
+    find:
+      paths: "/home/{{ os_admin_username}}/k8s_addons/rbac"
+      patterns: '*.yaml'
+    register: rbac_files
+    ignore_errors: true
+
+  - name: "STAGE_[ XX.X of 18 ] --- create  RBAC configuration"
+    kubernetes.core.k8s:
+      kubeconfig: "/etc/kubernetes/admin.conf"
+      state: present
+      src: "{{ item.path }}"
+    loop:  "{{ rbac_files.files }}"
+    ignore_errors: true
+
+

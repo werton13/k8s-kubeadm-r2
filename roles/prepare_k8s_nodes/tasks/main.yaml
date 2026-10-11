@@ -1,0 +1,4 @@
+---
+# tasks file for prepare_k8s_nodes
+#
+- include_tasks: ./prepare_hosts.yaml

@@ -1,0 +1,10 @@
+---
+  - name: "get nodes list to check cluster state"
+    shell: >
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf 
+      get node -o wide
+    register: nodes_list_raw
+    
+  - name: "display kubectl get nodes output"
+    debug:
+      msg: "{{ nodes_list_raw.stdout_lines }}"

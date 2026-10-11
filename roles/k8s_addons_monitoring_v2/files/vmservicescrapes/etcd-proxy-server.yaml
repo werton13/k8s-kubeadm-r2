@@ -1,0 +1,20 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: etcd-proxy-server
+  namespace: victoria-monitoring
+  labels:
+    app: etcd-proxy-server
+spec:
+  jobLabel: etcd-proxy-server
+  namespaceSelector:
+    matchNames:
+    - monitoring
+  selector:
+    matchLabels:
+      app: metrics
+      service: etcd-proxy-server
+  endpoints:
+  - interval: 1m
+    port: etcd-metrics
+

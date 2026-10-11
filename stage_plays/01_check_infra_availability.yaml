@@ -1,0 +1,17 @@
+---
+- hosts: masters:workers:jumphost
+  become: false
+  gather_facts: false
+  tasks:
+    - name: check nodes availability
+      ansible.builtin.ping:
+
+- hosts: masters[0]
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../vars/main.yaml
+    - ../vars/infrastructure_endpoints.yaml
+  roles:
+    - role: ../roles/check_infra_availability
+      when: skip_infra_check in ["true", "ok", "yes"]

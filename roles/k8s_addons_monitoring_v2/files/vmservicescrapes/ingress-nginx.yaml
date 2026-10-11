@@ -1,0 +1,14 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: nginx-ingress-controller-metrics
+  namespace: victoria-monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: controller 
+      app.kubernetes.io/name: ingress-nginx 
+  endpoints:
+    - port: metrics # This is typically the name of the port exposing metrics
+      path: /metrics # This is the default path for Prometheus metrics
+      interval: 30s # Adjust the scraping interval as needed

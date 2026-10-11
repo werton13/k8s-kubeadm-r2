@@ -1,0 +1,15 @@
+---
+- hosts: dvm
+  tasks:
+    - name: "Waiting till haproxy nodes be available via SSH"
+      include_role:
+        name: ../roles/wait_nodes
+      vars:
+        nodes: "{{ groups.haproxy }}"
+      when: ( lb_count | default(0) | int ) > 0 and ('haproxy' in groups)
+
+    - name: "Waiting till all master and worker nodes be available via SSH"
+      include_role:
+        name: ../roles/wait_nodes
+      vars:
+        nodes: "{{ groups.masters + groups.workers }}"

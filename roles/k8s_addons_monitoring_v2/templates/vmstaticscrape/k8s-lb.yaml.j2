@@ -1,0 +1,16 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMStaticScrape
+metadata:
+  name: vmstaticscrape-k8s-lb
+  namespace: victoria-monitoring
+spec:
+  jobName: k8s-lb
+  targetEndpoints:
+    - targets:
+  {% for lb_index in  range(lb_count|int) %}
+      - {{ lb_pref }}-0{{ lb_index|int+1 }}:8405
+  {% endfor %}
+    labels:
+      service: k8s-lb
+
+

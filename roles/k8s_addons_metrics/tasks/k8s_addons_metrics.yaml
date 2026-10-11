@@ -14,7 +14,8 @@
   - name: "STAGE_[ 10.3 of 18 ] --- Add Kubernetes Metrics Server  Helm repo"
     kubernetes.core.helm_repository:
       name: metrics-server
-      repo_url: "https://kubernetes-sigs.github.io/metrics-server"
+      repo_url: "{{ metrics_server_repo_path | default('https://kubernetes-sigs.github.io/metrics-server') }}"
+      #repo_url: "https://kubernetes-sigs.github.io/metrics-server"
     tags: 
       - metrics-server
         metrics-repo

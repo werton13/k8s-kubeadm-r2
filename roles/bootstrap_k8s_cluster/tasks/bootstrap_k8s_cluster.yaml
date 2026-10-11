@@ -1,59 +1,78 @@
 ---
   - name: "STAGE_[ 5.1 of 18 ] --- kubeadm reset"
     shell: kubeadm reset -f
+    ignore_errors: true
+
+  - name: "copy oidc CA file"
+    copy:
+      src: kc-ca.pem
+      dest: /etc/kubernetes/pki/kc-ca.pem
+    when: "'mst' in inventory_hostname and (oidc_enabled | default(false) | bool)"
 
   - name: "STAGE_[ 5.2 of 18 ] --- clean kubeadm artifacts"
     ansible.builtin.file:
-      path: "{{  item }}"
+      path: "{{ item }}"
       state: absent
     loop:
       - /etc/cni/net.d/
       - /etc/kubernetes/tmp/
+
   - name: "STAGE_[ 5.3 of 18 ] --- copy kubeadm init config"
     template:
-      src: ./templates/cluster_init_config.yaml.j2
-      dest: /home/{{ os_admin_username }}/cluster_init_config.yaml
+      src: ./templates/cluster_init_config_{{ k8s_version[1:] }}.yaml.j2
+      dest: /home/{{ os_admin_username }}/cluster_init_config_{{ k8s_version[1:] }}.yaml
       mode: 0644
 
   - name: "STAGE_[ 5.4 of 18 ] --- kubernetes cluster bootstrap"
     shell: |
-      kubeadm init --config "/home/{{ os_admin_username }}/cluster_init_config.yaml" --upload-certs
+      kubeadm init --config "/home/{{ os_admin_username }}/cluster_init_config_{{ k8s_version[1:] }}.yaml" --upload-certs
     register: kubeadm_init_out
+    retries: 3
+    delay: 10
 
-  - name: "STAGE_[ 5.5 of 18 ] --- cut output"
-    shell: |
-      echo "{{ kubeadm_init_out.stdout }}" | tail -n 10
-    register: tail_output
+  - name: "STAGE_[ 5.5 of 18 ] --- generate worker join command"
+    command: kubeadm token create --print-join-command
+    register: kubeadm_worker_join_raw
 
-  - name: "STAGE_[ 5.6 of 18 ] --- show tail_output"
-    debug:
-      msg: "{{ tail_output.stdout_lines }}"
-
-  - name: "STAGE_[ 5.7 of 18 ] --- extract controlplane join command"
+  - name: "STAGE_[ 5.6 of 18 ] --- extract worker join command"
     set_fact:
-      cp_join_cmd: "{{ tail_output.stdout_lines[1] | replace('\t', '')  }}"
-    # register: cp_join_cmd
-  - name: "STAGE_[ 5.8 of 18 ] ---show cp_join_cmd"
-    debug:
-      msg: "{{ cp_join_cmd }}"
-  
-  - name: "STAGE_[ 5.9 of 18 ] ---extract workers join command"
-    set_fact:
-      worker_join_cmd: "{{ tail_output.stdout_lines[9] | replace('\t', '')  }}"
+      worker_join_cmd: "{{ kubeadm_worker_join_raw.stdout | trim }}"
 
-  - name: "STAGE_[ 5.10 of 18 ] ---show worker_join_cmd"
+  - name: "STAGE_[ 5.7 of 18 ] --- upload certificates for control-plane join"
+    command: kubeadm init phase upload-certs --upload-certs
+    register: upload_certs_out
+
+  - name: "STAGE_[ 5.8 of 18 ] --- extract certificate key"
+    set_fact:
+      cert_key: "{{ upload_certs_out.stdout_lines[-1] | trim }}"
+
+  - name: "STAGE_[ 5.9 of 18 ] --- construct control plane join command"
+    set_fact:
+      cp_join_cmd: "{{ worker_join_cmd }} --control-plane --certificate-key {{ cert_key }}"
+
+  - name: "STAGE_[ 5.10 of 18 ] --- show join commands"
     debug:
-      msg: "{{ worker_join_cmd }}"
-  
-  - name: "STAGE_[ 5.11 of 18 ] ---join additional master nodes (when masternodes count > 1)"
+      msg:
+        - "Worker join command: {{ worker_join_cmd }}"
+        - "Control-plane join command: {{ cp_join_cmd }}"
+
+  - name: "STAGE_[ 5.11 of 18 ] --- join additional master nodes"
     shell: "{{ cp_join_cmd }}"
     delegate_to: "{{ item }}"
-    loop: "{{ groups.masters[1:] }}" # all masters exept first
-    when: masters_count | int > 1
+    loop: "{{ groups.masters[1:] }}"
+    when: (groups.masters | length) > 1
     tags: join_second_master
 
-  - name: "STAGE_[ 5.12 of 18 ] ---join workers nodes"
+  - name: "STAGE_[ 5.12 of 18 ] --- join workers nodes"
     shell: "{{ worker_join_cmd }}"
     delegate_to: "{{ item }}"
-    loop: "{{ groups.workers }}" # all workers
-    tags: join_masters
+    loop: "{{ groups.workers }}"
+    when: (groups.workers | length) > 0
+    tags: join_workers
+
+  - name: "STAGE_[ 5.13 of 18 ] --- label worker nodes with node-role.kubernetes.io/worker"
+    shell: >
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf
+      label node --selector='!node-role.kubernetes.io/control-plane'
+      node-role.kubernetes.io/worker="" --overwrite
+    ignore_errors: true

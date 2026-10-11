@@ -1,0 +1,4 @@
+---
+# tasks file for deploy_finalize
+- name: STAGE_[ XX of 18 ] --- add custom kernel parameters
+  include_tasks: add_kernel_params.yaml

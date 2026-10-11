@@ -1,0 +1,104 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{ hostvars[inventory_hostname]['ansible_' + os_nic1_name]['ipv4']['address'] | default(hostvars[inventory_hostname]['ansible_default_ipv4']['address']) }}
+  bindPort: 6443
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+certificatesDir: /etc/kubernetes/pki
+controllerManager:
+  extraArgs:
+    - name: bind-address
+      value: 0.0.0.0
+    - name: cluster-cidr
+      value: {{ k8s_pod_subnet }}
+    - name: node-cidr-mask-size
+      value: "25"
+    - name: service-cluster-ip-range
+      value: {{ k8s_service_subnet }}
+    - name: use-service-account-credentials
+      value: "true"
+    - name: node-monitor-grace-period
+      value: "30s"
+    - name: node-monitor-period
+      value: "4s"
+dns: {}
+
+kind: ClusterConfiguration
+clusterName: "{{ k8s_cluster_name }}"
+kubernetesVersion: {{ k8s_version_short }}
+controlPlaneEndpoint: {{ k8s_controlPlane_Endpoint }}:6443
+networking:
+  podSubnet: {{ k8s_pod_subnet }}
+  serviceSubnet: {{ k8s_service_subnet }}
+scheduler:
+  extraArgs:
+    - name: bind-address
+      value: 0.0.0.0
+
+apiServer:
+  extraArgs:
+    - name: audit-log-format
+      value: "json"
+    - name: audit-log-maxage
+      value: "7"
+    - name: audit-log-maxbackup
+      value: "10"
+    - name: audit-log-maxsize
+      value: "100"
+    - name: audit-log-path
+      value: "/var/log/kube-audit/audit.log"
+    - name: audit-policy-file
+      value: "/etc/kubernetes/policies/audit-policy.yaml"
+    - name: service-cluster-ip-range
+      value: {{ k8s_service_subnet }}
+    {% if oidc_issuer_url is defined and oidc_issuer_url != "" %}
+    - name: oidc-issuer-url
+      value: "{{ oidc_issuer_url }}"
+    - name: oidc-client-id
+      value: "{{ oidc_client_id | default('kubernetes') }}"
+    - name: oidc-username-claim
+      value: "{{ oidc_username_claim | default('sub') }}"
+    - name: oidc-groups-claim
+      value: "{{ oidc_groups_claim | default('groups') }}"
+    - name: oidc-username-prefix
+      value: "{{ oidc_username_prefix | default('oidc:') }}"
+    {% endif %}
+  certSANs:
+    {% for host in groups.masters %}
+    - {{ hostvars[host]['ansible_' + os_nic1_name]['ipv4']['address'] | default(hostvars[host]['ansible_default_ipv4']['address']) }}
+    - {{ host }}
+    {% endfor %}
+    - {{ k8s_controlPlane_Endpoint }}
+  extraVolumes:
+    - name: audit-policies
+      hostPath: /etc/kubernetes/policies/
+      mountPath: /etc/kubernetes/policies/
+      readOnly: false
+      pathType: Directory
+    - name: audit-logs
+      hostPath: /var/log/kube-audit/
+      mountPath: /var/log/kube-audit/
+      readOnly: false
+      pathType: Directory
+
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: "ipvs"
+metricsBindAddress: "0.0.0.0:10249"
+
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+containerLogMaxSize: "800Mi"
+containerLogMaxFiles: 2
+containerLogMaxWorkers: 5
+containerLogMonitorInterval: "10s"
+nodeStatusReportFrequency: "1m"
+imageGCHighThresholdPercent: 70
+imageGCLowThresholdPercent: 65
+imageMaximumGCAge: "0s"
+imageMinimumGCAge: "0s"
+nodeStatusUpdateFrequency: "6s"

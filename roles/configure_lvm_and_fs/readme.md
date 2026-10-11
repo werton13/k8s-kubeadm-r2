@@ -1,0 +1,3 @@
+### Configure LVM
+This role can configure single PV/VG/LV per block device, make file system on top of it, and mount this FS to a desired mount point. Check **tests/test.yml**.<br />
+> Do not use dashes "-" in VG and LV names! Otherwise an LV path would be like "mydata1--vg-mydata1--lv", so linux will change single a dash to the double one. Underscore "_" is a good choice to separate words in a LV name.

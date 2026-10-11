@@ -1,0 +1,84 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages:
+  - "RequestReceived"
+rules:
+  # Исключаем ВСЕ сервисные аккаунты
+  - level: None
+    userGroups: ["system:serviceaccounts"]
+
+  # Исключаем системных пользователей
+  - level: None
+    users:
+      - "system:*"
+      - system:kube-controller-manager
+      - system:kube-scheduler
+      - system:node
+      - system:apiserver
+      - system:public-info-viewer
+
+  # Исключаем узлы
+  - level: None
+    userGroups: ["system:nodes"]
+
+  # Custom - логируем только для certificates API
+  - level: Metadata
+    resources:
+      - group: "certificates.k8s.io"
+
+  # Не логируем операции чтения для всех ресурсов
+  - level: None
+    verbs: ["get", "list", "watch"]
+    resources:
+      - group: ""
+      - group: "admissionregistration.k8s.io"
+      - group: "apps"
+      - group: "authentication.k8s.io"
+      - group: "authorization.k8s.io"
+      - group: "autoscaling"
+      - group: "batch"
+      - group: "certificates.k8s.io"
+      - group: "extensions"
+      - group: "networking.k8s.io"
+      - group: "policy"
+      - group: "rbac.authorization.k8s.io"
+      - group: "settings.k8s.io"
+      - group: "storage.k8s.io"
+
+  # Не логируем health checks и API документацию
+  - level: None
+    nonResourceURLs:
+      - "/healthz*"
+      - "/livez*"
+      - "/readyz*"
+      - "/version"
+
+  # Исключения для чувствительных ресурсов (только метаданные)
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+      - group: authentication.k8s.io
+        resources: ["tokenreviews"]
+
+  # Логируем операции изменения для всех ресурсов
+  - level: Metadata
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+      - group: "admissionregistration.k8s.io"
+      - group: "apps"
+      - group: "authentication.k8s.io"
+      - group: "authorization.k8s.io"
+      - group: "autoscaling"
+      - group: "batch"
+      - group: "certificates.k8s.io"
+      - group: "extensions"
+      - group: "networking.k8s.io"
+      - group: "policy"
+      - group: "rbac.authorization.k8s.io"
+      - group: "settings.k8s.io"
+      - group: "storage.k8s.io"
+
+  # Дефолтный уровень для всего остального
+  - level: None

@@ -1,0 +1,17 @@
+# code: language=ansible
+---
+- name: "Gather facts"
+  ansible.builtin.setup:
+
+- name: "Get mounts info"
+  ansible.builtin.debug:
+    msg:
+      - "Mount point: {{ item.mount }}"
+      - "Device: {{ item.device }}"
+      - "Size in MiB: {{ item.size_total / 1048576 }}"
+  loop: "{{ ansible_facts['mounts'] }}"
+  loop_control:
+    label: "{{ item.mount }}"
+  when:
+    - not item.mount is match(".*snap.*")
+    - not item.mount is match(".*boot.*")

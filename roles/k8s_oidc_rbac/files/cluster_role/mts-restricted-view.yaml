@@ -1,0 +1,43 @@
+# cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mts-restricted-view
+rules:
+  # =============================================
+  # Core resources (pods, services, configmaps)
+  # =============================================
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+
+  # =============================================
+  # Workloads (deployments, daemonsets, etc.)
+  # =============================================
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - daemonsets
+      - statefulsets
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+
+  # =============================================
+  # Networking (Ingress)
+  # =============================================
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch

@@ -1,0 +1,62 @@
+---
+# these not required for new installations
+#  - name: "remove old gpg pub key for an archive K8s versions"
+#    ansible.builtin.file:
+#      path: "/usr/share/keyrings/kubernetes-archive-keyring.gpg"
+#      state: absent
+#    tags:
+#      - repoadd
+#      - kube_repo
+
+#  - name: "update gpg pub key for an archive K8s versions"
+#    ansible.builtin.get_url:
+#      url: "{{ versions.K8s['1_22']['gpg_key_url'] }}"
+#      dest: "/usr/share/keyrings/kubernetes-archive-keyring.gpg"
+#      mode: '0644'
+#    tags:
+#      - repoadd
+#      - kube_repo
+
+  - name: "install gpg pub key for a target K8s version"
+    ansible.builtin.get_url:
+      url: "{{ gpg_key_url }}" #"{{ versions.K8s[k8s_version]['gpg_key_url'] }}"
+      dest: "/etc/apt/keyrings/kubernetes-apt-keyring.gpg" #"/usr/share/keyrings/kubernetes-apt-keyring.gpg"
+      mode: '0644'
+    tags:
+      - repoadd
+      - kube_repo
+    
+  - name: "Add the Kubernetes apt repository for a target K8s version"
+    ansible.builtin.apt_repository:
+      repo: "{{ apt_repo }}" #"{{ versions.K8s[k8s_version]['apt_repo'] }}"
+      state: present
+      filename: kubernetes
+      update_cache: true
+
+  - name: "add config file for crictl"
+    copy:
+      src: crictl.yaml
+      dest: /etc/
+
+# check each K8s package version and update it, if it is required
+  - name: "get node installed packaged information"
+    ansible.builtin.package_facts:
+      manager: auto
+    register: host_apps
+
+  - name: "put currently installed kubernetes components versions into variables"
+    set_fact:
+      kubectl_cur_ver: "{{ host_apps['ansible_facts'].packages.kubectl[0].version | default('none') }}" 
+      kubeadm_cur_ver: "{{ host_apps['ansible_facts'].packages.kubeadm[0].version | default('none')}}"
+      kubelet_cur_ver: "{{ host_apps['ansible_facts'].packages.kubelet[0].version | default('none')}}"
+      containerd_cur_ver: "{{ host_apps['ansible_facts'].packages.containerd[0].version | default('none') }}"
+      cri_tools_cur_ver: "{{ host_apps['ansible_facts'].packages['cri-tools'][0].version | default('none') }}"
+
+  - name: "call check and update procedure for each k8s package in a dictionary"
+    include_tasks: check_and_update_k8s_binaries.yaml 
+    loop:
+      - kubectl
+      - kubeadm
+      - kubelet
+      - containerd
+      - cri-tools

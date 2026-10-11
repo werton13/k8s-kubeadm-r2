@@ -1,0 +1,25 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: prometheus-node-exporter
+  namespace: victoria-monitoring
+spec:
+  endpoints:
+  - port: metrics
+    relabelConfigs:
+    - replacement: node-exporter
+      targetLabel: job
+    - action: replace
+      regex: (.*)
+      replacement: ${1}
+      sourceLabels:
+      - __meta_kubernetes_pod_node_name
+      targetLabel: nodename
+    scheme: http
+    scrapeTimeout: 10s
+  jobLabel: app.kubernetes.io/name
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus-node-exporter
+      app.kubernetes.io/name: prometheus-node-exporter

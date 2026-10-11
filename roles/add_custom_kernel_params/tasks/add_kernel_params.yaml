@@ -1,0 +1,8 @@
+  - name: "copy custom kernel params config file"
+    copy:
+      src: sysctl.d_custom.conf
+      dest: "/etc/sysctl.d/custom.conf"
+
+  - name:  "apply kernel parameters changes"
+    shell: |
+      sysctl --system

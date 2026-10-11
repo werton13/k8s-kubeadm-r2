@@ -1,0 +1,6 @@
+- name: "Reboot machine and wait for startup"
+  ansible.builtin.reboot:
+    reboot_timeout: 600
+
+- name: "Collect ansible facts after boot"
+  ansible.builtin.setup:

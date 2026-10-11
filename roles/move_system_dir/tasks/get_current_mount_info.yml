@@ -1,0 +1,20 @@
+- name: "Get current source mount info"
+  ansible.builtin.set_fact:
+    new_mount_info: "{{ ansible_facts['mounts'] | selectattr('mount', '==', item.source) | list }}"
+
+- name: "Show current mount info"
+  ansible.builtin.debug:
+    msg: |
+      Current {{ item.source }} device: {{ new_mount_info[0].device }}
+      Total space: {{ (new_mount_info[0].size_total | int) / 1048576 }} MiB
+      Free space: {{ (new_mount_info[0].size_available | int) / 1048576 }} MiB
+
+- name: "Trying to put a test file on the new mount point"
+  ansible.builtin.file:
+    state: touch
+    path: "{{ item.source }}/my-test-file"
+
+- name: "Remove the test file from the new mount point"
+  ansible.builtin.file:
+    state: absent
+    path: "{{ item.source }}/my-test-file"

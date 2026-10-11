@@ -1,0 +1,22 @@
+# install Helm and etcd tools on master nodes
+- hosts: dvm:masters
+  gather_facts: true
+  become: true
+  pre_tasks:
+    - name:  "STAGE_[ 2 of 18 ]- install HELM v binaries on master nodes"
+      debug:
+        msg: "STAGE_[ 2 of 18 ]- install HELM v {{ helm_version }} binaries on master nodes"
+  tasks:
+    - name: "install etcd binaries"
+      include_role:
+        name: ../roles/install_etcd_binaries
+      # vars:
+      #   ETCD_RELEASES_URL: "{{ ETCD_RELEASES_URL }}"
+      #   etcd_ver: "{{ etcd_ver }}"
+
+    - name: "install Helm binaries"
+      include_role:
+        name: ../roles/install_helm
+      # vars:
+      #   helm_version: "{{ helm_version }}"
+  

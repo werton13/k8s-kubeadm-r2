@@ -1,0 +1,8 @@
+# code: language=ansible
+---
+- name: "Configure LVM tome, make file system on top of it and mount the FS"
+  ansible.builtin.include_tasks: configuration.yml
+  loop: "{{ configure_lvm_and_fs_storages }}"
+
+- name: "Show mounts info"
+  ansible.builtin.include_tasks: show_mounts.yml

@@ -1,0 +1,12 @@
+# code: language=ansible
+---
+- name: "Synchronize data, get stats (files and dirs) and configure new mount points"
+  ansible.builtin.include_tasks: sync_stats_and_mount_config.yml
+  loop: "{{ move_system_dir_config }}"
+
+- name: "Reboot and gather facts"
+  ansible.builtin.include_tasks: reboot_and_get_facts.yml
+
+- name: "Show current mount information"
+  ansible.builtin.include_tasks: get_current_mount_info.yml
+  loop: "{{ move_system_dir_config }}"

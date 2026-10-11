@@ -1,8 +1,10 @@
 ---
 # tasks file for k8s_addons_ingress
-- name: STAGE_[ 11 of 18 ] --- install Kubernetes ingress components
+- name: "STAGE_[ 11 of 18 ] --- install Kubernetes ingress controller"
   include_tasks: k8s_addons_ingress_controller.yaml
-- name: STAGE_[ 11 of 18 ] --- install Kubernetes ingress components
-  include_tasks: k8s_addons_ingress.yaml
+
+#- name: "STAGE_[ 11 of 18 ] --- install Kubernetes ingress resources"
+# need to configure this task with  condition - install if required and for specified endpoints
+#  include_tasks: k8s_addons_ingress.yaml
 
  

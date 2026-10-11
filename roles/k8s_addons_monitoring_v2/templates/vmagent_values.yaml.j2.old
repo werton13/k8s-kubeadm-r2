@@ -1,0 +1,18 @@
+victoria-metrics-agent:
+  replicaCount: 1
+
+  image:
+    repository: victoriametrics/vmagent
+    tag: "v1.97.1"
+    pullPolicy: IfNotPresent
+
+  remoteWriteUrls:
+  - {{ remoteWriteUrl }}
+# - {{ remoteWriteUrl }} 
+  config:
+    global:
+      external_labels:
+        env: {{ env_name }}
+        k8s_type: private
+        datacenter: {{ dctr_name }}
+        project: {{ project_name }}  #apigw

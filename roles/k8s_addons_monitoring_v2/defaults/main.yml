@@ -1,0 +1,8 @@
+---
+k8s_type: "vcloud"
+dctr_name: "vcloud"
+env_name: "dev"
+project_name: "k8s"
+remoteWriteUrl: ""
+remoteWriteUsername: ""
+remoteWritePassword: ""

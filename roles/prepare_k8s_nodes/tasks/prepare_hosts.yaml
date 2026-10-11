@@ -6,15 +6,15 @@
 #    - ./vars/base_vars.yaml
 #
 #  tasks:
-    - name: Waiting till all master and worker nodes be available via SSH, check each 10
-      wait_for:
-        host: "{{ item }}"
-        port: 22
-        sleep: 10
-        delay: 10
-        timeout: 600
-      loop: "{{ nodes }}" #"{{ groups.masters + groups.workers }}"
-      delegate_to: dvm
+#    - name: Waiting till all master and worker nodes be available via SSH, check each 10
+#      wait_for:
+#        host: "{{ item }}"
+#        port: 22
+#        sleep: 10
+#        delay: 10
+#        timeout: 600
+#      loop: "{{ nodes }}" #"{{ groups.masters + groups.workers }}"
+#      delegate_to: dvm
 #      connection: local
 
   
@@ -29,13 +29,13 @@
       ansible.builtin.ping:
 
 # change DNS server in the netplan config to IP specifical in the target environment
-    - name: "search netplan file with dns configuration"
+    - name: "search netplan file with defined dns configuration"
       shell: |
         grep -ilr "{{ def_dns  }}" /etc/netplan
       register: netplan_path
       failed_when: netplan_path.rc not in [ 0, 1 ]
 
-    - name: "show netplan path"
+    - name: "show detected netplan file path"
       debug:
         msg:
           - "netplan config found in:"
@@ -51,93 +51,104 @@
         path: "{{ netplan_path.stdout }}"
         regexp: "{{ def_dns }}"
         replace: "{{ env_dns1 }}\n{{ indents.stdout }}- {{ env_dns2 }}" #10spaces -tabs are not accepted by netplan
-
       failed_when: netplan_path.rc not in [ 0, 1 ]
 
-
-
-
-    - name: "apply netplan after dns change"
+    - name: "apply netplan after changing DNS configuration"
       shell: |
         netplan apply
-      
-    - name: Download Docker’s official GPG key
-      ansible.builtin.get_url:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/dockergpg
-        mode: '0644'
-      tags: repodocker
+
+#    - name: "configure sources.list for private registry"
+#      template:
+#        src: sources.list.j2
+#        dest: /etc/apt/sources.list
+#        mode: '0644'
+
+
+#    - name: "Download Docker’s official GPG key"
+#      ansible.builtin.get_url:
+#        url: https://download.docker.com/linux/ubuntu/gpg
+#        dest: /etc/apt/keyrings/dockergpg
+#        mode: '0644'
+#      tags: repodocker
     
-    - name: check docker.gpg key already exist locally
-      stat:
-        path: /etc/apt/keyrings/docker.gpg
-      register: dockergpg_check
+#    - name: "check docker.gpg key already exist locally"
+#      stat:
+#        path: /etc/apt/keyrings/docker.gpg
+#      register: dockergpg_check
 
-    - name: "remove existing docker.gpg key"
-      file:
-        path:  /etc/apt/keyrings/docker.gpg
-        state: absent
-      when: dockergpg_check.stat.exists
+#    - name: "remove existing docker.gpg key"
+#      file:
+#        path:  /etc/apt/keyrings/docker.gpg
+#        state: absent
+#      when: dockergpg_check.stat.exists
 
-    - name: dearmor docker gpg
-      shell: |
-        cat /etc/apt/keyrings/dockergpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-      tags: repodocker
-    #  when: not dockergpg_check.stat.exists
-    #
-    - name: Add the docker apt repository - for containerd.io
-      ansible.builtin.apt_repository:
-        repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable
-        state: present
-        filename: docker
-        update_cache: true
-      tags:
-        - repodocker
+#    - name: "dearmor docker gpg"
+#      shell: |
+#        cat /etc/apt/keyrings/dockergpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+#      tags: repodocker
 
-    - name: update apt
+#    - name: "Add the docker apt repository - for containerd.io"
+#      ansible.builtin.apt_repository:
+#        repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable
+#        state: present
+#        filename: docker
+#        update_cache: true
+#      tags:
+#        - repodocker
+
+    - name: "install base packages"
       apt:
         update_cache: true
         name: "{{ item }}"
         state: present
       loop:
-        - sshpass
+        - sshpass     # required for Ansible ssh auth with password
         - whois       # required for 'mkpassword' command
-        - python-pip  # required to install kubernetes python package
         - python3-pip # required to install kubernetes python package
-        - containerd.io
+        - containerd #containerd.io
         - apt-transport-https # required for kubeadm
         - ca-certificates     # required for kubeadm
         - curl                # required for kubeadm
-        - jq
+        - jq                  # required for parsing manifests
+        - yq                  # required for parsing manifests
+        - python3-kubernetes
+#        - python-pip  # required to install kubernetes python package
 
 
-    - name: Install kubernetes python package
-      ansible.builtin.pip:
-        name: "{{ item }}"
-      loop:
-        - kubernetes
-        - yq
+#    - name: "Install kubernetes python package"
+#      ansible.builtin.pip:
+#        name: "{{ item }}"
+#      loop:
+#        - kubernetes
+#        - yq
 
     # swap disable:
-    - name: show swapon state
+    - name: "show swapon state"
       debug:
         msg: "SWAP is enabled, will try to disable it"
     
-    - name: disable swapon
+    - name: "disable swapon"
       shell: "swapoff -a"
       register: SWAP_STATE
+
+    - name: "Comment out specific swap lines in fstab"
+      replace:
+        path: /etc/fstab  # Укажите путь к вашему файлу
+        regexp: '^(/dev/disk/by-id/dm-uuid-LVM-[^\s]+\s+(none)\s+swap\s+sw\s+0\s+0)$'
+        replace: '# \1'
        
-    - name: edit fstab to disabe swap on startup
+    - name: "edit fstab to disabe swap on startup"
       lineinfile:
         path: /etc/fstab
         regexp: '^/swap'
         line: '#/swap.img       none    swap    sw      0       0'
+
     
-    - name: show swapoff result
+    - name: "show swapoff result"
       debug:
         msg: "swap on {{ inventory_hostname }} is disabled"
 
-    - name: create required  directories
+    - name: "create required  directories"
       file: 
         path: "{{ item }}"
         state: directory
@@ -145,26 +156,125 @@
       loop:
         - /etc/containerd
 
-    - name: copy additional config for loaded modules
+    - name: "copy additional config for loaded modules"
       copy:
         src: "./files/load.d_k8s.conf"
         dest: "/etc/modules-load.d/k8s.conf"
-    - name: copy additional kernel params config file
+
+    - name: "copy additional kernel params config file"
       copy:
         src: "./files/sysctl.d_k8s.conf"
         dest: "/etc/sysctl.d/k8s.conf"
-    - name: copy containerd config file
-      copy:
-        src: "./files/containerd_config.toml"
+
+    - name: "copy containerd config file - version older than 2.X.X"
+      when: k8s_containerd | regex_search('^1')
+      template:
+        src: "./templates/containerd_config_{{ env_type }}.toml.j2"
         dest: "/etc/containerd/config.toml"
+
+    - name: "copy containerd config file - version newer than 2.X.X"
+      when: k8s_containerd | regex_search('^2')
+      template:
+        src: "./templates/containerd_config_common_v2.toml.j2"
+        dest: "/etc/containerd/config.toml"
+
+    - name: "Prepare containerd specific registry directories - version newer than 2.X.X"
+      when: (k8s_containerd | regex_search('^2')) and (env_type == "private")
+      file:
+        path: "/etc/containerd/certs.d/{{ item }}"
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+      loop:
+        - "_default"
+        - "docker.io"
+        - "gcr.io"
+        - "mirror.gcr.io"
+        - "quay.io"
+        - "ghcr.io"
+        - "k8s.gcr.io"
+        - "registry.k8s.io"        
+
+    - name: "Prepare containerd specific registry configs - version newer than 2.X.X"
+      when: (k8s_containerd | regex_search('^2')) and (env_type == "private")
+      template:
+        src: "./templates/containerd_hosts.toml.j2"
+        dest: "/etc/containerd/certs.d/{{ item }}/hosts.toml"
+        mode: '0700'
+        owner: root
+        group: root
+      loop:
+        - "_default"
+        - "docker.io"
+        - "gcr.io"
+        - "mirror.gcr.io"
+        - "quay.io"
+        - "ghcr.io"
+        - "k8s.gcr.io"
+        - "registry.k8s.io"    
     
-    - name:  apply kernel parameters changes
+    - name: "Prepare Kubernetes specific directories"
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+      loop:
+        - "/var/log/kube-audit/"       # Create audit log directory
+        - "/etc/kubernetes/policies/"  # Create audit policy directory
+        - "/etc/kubernetes/pki/"       # Create Kubernetes PKI directory for oidc CA file placement
+      when: "'mst' in  inventory_hostname"
+
+#    - name: "Create audit log directory"
+#      file:
+#        path: /var/log/kube-audit/
+#        state: directory
+#        mode: '0755'
+#        owner: root
+#        group: root
+#      when: "'mst' in  inventory_hostname"
+          
+#    - name: "Create audit policy directory"
+#      file:
+#        path: /etc/kubernetes/policies/
+#        state: directory
+#        mode: '0755'
+#        owner: root
+#        group: root
+#      when: "'mst' in  inventory_hostname"
+
+    - name: "Copy Audit Policy"
+      ansible.builtin.copy:
+        src: "audit-policy_{{ k8s_version[1:] }}.yaml"
+        dest: /etc/kubernetes/policies/audit-policy.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      when: "'mst' in  inventory_hostname"
+
+    - name: "copy oidc CA file"
+      copy:
+        src: kc-ca.pem
+        dest: /etc/kubernetes/pki/kc-ca.pem
+      when: "'mst' in  inventory_hostname"
+
+    
+    - name:  "apply kernel parameters changes"
       shell: |
         modprobe overlay
         modprobe br_netfilter
         sysctl --system
+      ignore_errors: true
+
+    - name: "disable ubuntu's default apparmor runc profile"
+      shell: |
+        ln -s /etc/apparmor.d/runc /etc/apparmor.d/disable/
+        apparmor_parser -R /etc/apparmor.d/runc
+      ignore_errors: true
     
-    - name: restart containerd
+    - name: "restart containerd"
       systemd:
         state: restarted
         daemon_reload: true

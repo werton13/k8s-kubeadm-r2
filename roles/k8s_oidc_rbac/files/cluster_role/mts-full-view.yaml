@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mts-full-view
+rules:
+  # =============================================
+  # Global read-only access
+  # =============================================
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs:
+      - get
+      - list
+      - watch
+
+  # =============================================
+  # Non-resource URLs (metrics, healthz, etc.)
+  # =============================================
+  - nonResourceURLs: ["*"]
+    verbs:
+      - get
+      - list
+      - watch

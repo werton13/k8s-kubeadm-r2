@@ -34,6 +34,6 @@ for h in {MST01,MST02,MST03};
     echo "$(date +%F-%T): starting copy etcd_backup files from $h" >> $SCRIPT_LOG_FILE
     rsync -av $h:/etcd_backup/* /etcd_backups/$h >> $SCRIPT_LOG_FILE 2>&1
     echo "----------------------------------------------------------------------------" >> $SCRIPT_LOG_FILE
-    find /etcd_backups/$h -name "etcd-backup-*.db.gz" -type f -mtime +$RETENTION_DAYS -delete
+    find /etcd_backups/$h -name "etcd-backup-*" -type f -mtime +$RETENTION_DAYS -delete
  
 done

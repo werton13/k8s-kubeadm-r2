@@ -24,7 +24,7 @@
   
   - name: "restart sshd after enabling public key authentication"
     ansible.builtin.service:
-      name: sshd
+      name: ssh
       state: restarted
     
  
