@@ -55,6 +55,13 @@
       dest: /home/{{ os_admin_username }}/cluster_init_config_{{ k8s_version[1:] }}.yaml
       mode: 0644
 
+  - name: "STAGE_[ 5.3 of 18 ] --- kube-vip manifest for kubeadm init (super-admin.conf)"
+    include_tasks: kube_vip_manifest.yaml
+    vars:
+      kube_vip_host: "{{ inventory_hostname }}"
+      kube_vip_kubeconfig: /etc/kubernetes/super-admin.conf
+    when: kube_vip_enabled | default(false) | bool
+
   - name: "STAGE_[ 5.4 of 18 ] --- kubernetes cluster bootstrap"
     shell: |
       kubeadm init --config "/home/{{ os_admin_username }}/cluster_init_config_{{ k8s_version[1:] }}.yaml" --upload-certs
@@ -95,6 +102,15 @@
     when: (groups.masters | length) > 1
     tags: join_second_master
 
+  # after the control-plane join: admin.conf exists on the node only once the join has finished
+  - name: "STAGE_[ 5.11 of 18 ] --- kube-vip manifest on additional master nodes"
+    include_tasks: kube_vip_manifest.yaml
+    vars:
+      kube_vip_host: "{{ item }}"
+      kube_vip_kubeconfig: /etc/kubernetes/admin.conf
+    loop: "{{ groups.masters[1:] }}"
+    when: kube_vip_enabled | default(false) | bool
+
   - name: "STAGE_[ 5.12 of 18 ] --- join workers nodes"
     shell: "{{ worker_join_cmd }}"
     delegate_to: "{{ item }}"
@@ -108,3 +124,20 @@
       label node --selector='!node-role.kubernetes.io/control-plane'
       node-role.kubernetes.io/worker="" --overwrite
     ignore_errors: true
+
+  # last step: kubelet restarts kube-vip on the init node, the VIP moves to another master meanwhile
+  - name: "STAGE_[ 5.14 of 18 ] --- switch kube-vip on the init node to admin.conf"
+    ansible.builtin.replace:
+      path: /etc/kubernetes/manifests/kube-vip.yaml
+      regexp: 'path: /etc/kubernetes/super-admin.conf'
+      replace: 'path: /etc/kubernetes/admin.conf'
+    when: kube_vip_enabled | default(false) | bool
+
+  - name: "STAGE_[ 5.14 of 18 ] --- wait for kube-api on the VIP"
+    ansible.builtin.command: kubectl --kubeconfig=/etc/kubernetes/admin.conf get --raw /readyz
+    register: kube_vip_readyz
+    until: kube_vip_readyz.rc == 0
+    retries: 30
+    delay: 5
+    changed_when: false
+    when: kube_vip_enabled | default(false) | bool

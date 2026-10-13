@@ -72,6 +72,9 @@ apiServer:
     - {{ host }}
     {% endfor %}
     - {{ k8s_controlPlane_Endpoint }}
+    {% for san in k8s_api_extra_sans | default([]) %}
+    - {{ san }}
+    {% endfor %}
   extraVolumes:
     - name: audit-policies
       hostPath: /etc/kubernetes/policies/
@@ -89,6 +92,12 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 mode: "ipvs"
 metricsBindAddress: "0.0.0.0:10249"
+{% if kube_vip_enabled | default(false) | bool %}
+# kube-vip ARP mode: only the kube-vip leader may answer ARP for LoadBalancer IPs,
+# kube-proxy IPVS binds them to kube-ipvs0 on every node
+ipvs:
+  strictARP: true
+{% endif %}
 
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1

@@ -23,8 +23,11 @@
           portName: metrics
           service:
             enabled: true
+        # with ingress_lb_ip (kube-vip, NSX-T without an Edge LB) the service gets that VIP,
+        # otherwise the Edge LB forwards to the fixed NodePorts
         service:
-          type: NodePort
+          type: "{{ 'LoadBalancer' if (ingress_lb_ip | default('')) else 'NodePort' }}"
+          annotations: "{{ {'kube-vip.io/loadbalancerIPs': ingress_lb_ip} if (ingress_lb_ip | default('')) else {} }}"
           nodePorts:
             http: "{{ ingress_controller_nodeport_http }}"
             https: "{{ ingress_controller_nodeport_https }}"
