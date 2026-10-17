@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  role_name: k8s_addons_node_controller
+  author: werton13
+  description: Install the optional vcd-k8s-node-controller Helm chart
+  license: Apache-2.0
+  min_ansible_version: "2.15"
+  galaxy_tags:
+    - kubernetes
+    - vcloud
+    - autoscaling
+
+dependencies: []

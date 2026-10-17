@@ -36,6 +36,11 @@
         name: ../roles/k8s_addons_monitoring_v2
       when: (obs_type | default('none')) == 'vm_stack'
 
+    - name: "Deploy vcd-k8s-node-controller (optional)"
+      include_role:
+        name: ../roles/k8s_addons_node_controller
+      when: (node_controller_enabled | default(false) | bool)
+
     - name: "Deploy OIDC RBAC (optional)"
       include_role:
         name: ../roles/k8s_oidc_rbac

@@ -1,0 +1,91 @@
+---
+# Optional vcd-k8s-node-controller installation.
+#
+# Terraform owns the initial bootstrap only. When node_controller_enabled is
+# true, the controller and its K8sWorkerPool CRD own subsequent worker scaling.
+# Do not change worker count or worker LB membership with Terraform afterwards.
+- name: "STAGE_[ 12 of 18 ] --- deploy vcd-k8s-node-controller"
+  when: node_controller_enabled | default(false) | bool
+  block:
+    - name: "Verify node-controller ownership acknowledgement"
+      ansible.builtin.assert:
+        that:
+          - >-
+            node_controller_acknowledge_terraform_ownership_loss
+            | default(false) | bool
+        fail_msg: >-
+          node_controller_enabled=true requires
+          node_controller_acknowledge_terraform_ownership_loss=true.
+          Enabling the controller transfers worker scaling and worker LB pool
+          ownership from Terraform to the controller/CRD.
+        quiet: true
+
+    - name: "Verify vCD service credentials for the node controller"
+      ansible.builtin.assert:
+        that:
+          - node_controller_vcd_user | default('') | length > 0
+          - node_controller_vcd_password | default('') | length > 0
+        fail_msg: >-
+          node_controller_create_vcd_secret=true requires
+          node_controller_vcd_user and node_controller_vcd_password
+          (a dedicated vCD service account is recommended).
+        quiet: true
+      when: node_controller_create_vcd_secret | default(true) | bool
+
+    - name: "Ensure node-controller namespace exists"
+      kubernetes.core.k8s:
+        kubeconfig: /etc/kubernetes/admin.conf
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ node_controller_namespace }}"
+      when: node_controller_create_namespace | default(true) | bool
+
+    - name: "Create vCD credentials Secret for the node controller"
+      kubernetes.core.k8s:
+        kubeconfig: /etc/kubernetes/admin.conf
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ node_controller_vcd_secret_name }}"
+            namespace: "{{ node_controller_namespace }}"
+          type: Opaque
+          stringData:
+            url: "{{ node_controller_vcd_url }}"
+            user: "{{ node_controller_vcd_user }}"
+            password: "{{ node_controller_vcd_password }}"
+            org: "{{ vcloud_orgname }}"
+            vdc: "{{ vcloud_vdc }}"
+            insecure: "{{ node_controller_vcd_insecure | bool | lower }}"
+      when: node_controller_create_vcd_secret | default(true) | bool
+      no_log: true
+
+    - name: "Add the node-controller Helm repository"
+      kubernetes.core.helm_repository:
+        name: "{{ node_controller_chart_repo_name }}"
+        repo_url: "{{ node_controller_chart_repo }}"
+      when: not node_controller_chart_repo.startswith('oci://')
+
+    - name: "Install or upgrade vcd-k8s-node-controller"
+      kubernetes.core.helm:
+        name: "{{ node_controller_release_name }}"
+        chart_ref: "{{ node_controller_chart_ref }}"
+        chart_version: "{{ node_controller_chart_version }}"
+        release_namespace: "{{ node_controller_namespace }}"
+        create_namespace: "{{ node_controller_create_namespace | bool }}"
+        kubeconfig: /etc/kubernetes/admin.conf
+        atomic: "{{ node_controller_helm_atomic | bool }}"
+        timeout: "{{ node_controller_helm_timeout }}"
+        values:
+          image:
+            repository: "{{ node_controller_image_repository }}"
+            tag: "{{ node_controller_image_tag }}"
+            pullPolicy: "{{ node_controller_image_pull_policy }}"
+          namespace:
+            name: "{{ node_controller_namespace }}"
+          vcd:
+            existingSecret: "{{ node_controller_vcd_secret_name }}"

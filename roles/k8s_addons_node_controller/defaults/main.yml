@@ -1,0 +1,37 @@
+---
+# Defaults mirror the Terraform `node_controller` variable. Terraform passes
+# all of these explicitly in vars/cluster_vars.yaml; the defaults keep the role
+# usable standalone and document the contract.
+node_controller_enabled: false
+node_controller_acknowledge_terraform_ownership_loss: false
+
+node_controller_namespace: "vcd-nodescale-system"
+node_controller_release_name: "vcd-nodescale"
+node_controller_chart_repo: "https://werton13.github.io/vcd-k8s-node-controller"
+node_controller_chart_repo_name: "vcd-k8s-node-controller"
+node_controller_chart_name: "vcd-nodescale"
+node_controller_chart_version: "0.1.0"
+node_controller_chart_ref: >-
+  {{
+    (node_controller_chart_repo.startswith('oci://')
+     and node_controller_chart_repo)
+    or (node_controller_chart_repo_name ~ '/' ~ node_controller_chart_name)
+  }}
+
+node_controller_image_repository: >-
+  docker.io/werton13/vcd-k8s-node-controller
+node_controller_image_tag: "0.1.0"
+node_controller_image_pull_policy: "IfNotPresent"
+
+node_controller_create_namespace: true
+node_controller_create_vcd_secret: true
+node_controller_vcd_secret_name: "vcd-credentials"
+node_controller_vcd_user: ""
+node_controller_vcd_password: ""
+# Terraform passes vcloud_url as the vCD FQDN (without scheme).
+node_controller_vcd_url: >-
+  https://{{ vcloud_url | regex_replace('/+$', '') }}/api
+node_controller_vcd_insecure: true
+
+node_controller_helm_timeout: "10m"
+node_controller_helm_atomic: true

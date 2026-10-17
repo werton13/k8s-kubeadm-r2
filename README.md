@@ -36,6 +36,7 @@
     ├── k8s_addons_ingress                            # NGINX Ingress Controller (публичный Helm-чарт)
     ├── k8s_addons_metrics                            # Kubernetes Metrics Server (публичный Helm-чарт)
     ├── k8s_addons_monitoring_v2                      # VictoriaMetrics стек (vmoperator, vmagent, scrapes)
+    ├── k8s_addons_node_controller                    # Опциональный vcd-k8s-node-controller (worker autoscaling)
     ├── k8s_dvm_gather_bkp                            # Сбор резервных копий etcd на DVM
     ├── k8s_mst_etcd_bkp                              # Скрипт etcd-снапшотов на master-нодах
     ├── k8s_patch_coredns                             # Патч CoreDNS для резолва vCloud API FQDN
@@ -43,6 +44,25 @@
     ├── prepare_k8s_nodes_disks                       # LVM разметка /var и /var/lib
     └── wait_nodes                                    # Модуль ожидания готовности портов
 ```
+
+---
+
+## Опциональный vcd-k8s-node-controller
+
+Роль `k8s_addons_node_controller` устанавливает Helm-чарт
+[`vcd-k8s-node-controller`](https://github.com/werton13/vcd-k8s-node-controller),
+если Terraform передал `node_controller_enabled: true`.
+
+Перед включением необходимо явно подтвердить передачу ответственности:
+`node_controller_acknowledge_terraform_ownership_loss: true`. После включения
+контроллер и CRD `K8sWorkerPool` управляют масштабированием worker-нод и
+членством в LB pool. Terraform больше не должен использоваться для изменения
+количества worker-нод, их конфигурации или состава LB pool.
+
+Роль создаёт namespace, Secret с учётными данными vCD (если
+`node_controller_create_vcd_secret: true`) и устанавливает чарт с
+зафиксированными `chart_version` / `image_tag`. Все параметры приходят из
+Terraform в `vars/cluster_vars.yaml`.
 
 ---
 
