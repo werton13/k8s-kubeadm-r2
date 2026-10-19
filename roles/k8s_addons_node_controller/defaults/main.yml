@@ -10,7 +10,7 @@ node_controller_release_name: "vcd-nodescale"
 node_controller_chart_repo: "https://werton13.github.io/vcd-k8s-node-controller"
 node_controller_chart_repo_name: "vcd-k8s-node-controller"
 node_controller_chart_name: "vcd-nodescale"
-node_controller_chart_version: "0.1.0"
+node_controller_chart_version: "0.1.1"
 node_controller_chart_ref: >-
   {{
     (node_controller_chart_repo.startswith('oci://')
