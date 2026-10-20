@@ -8,3 +8,4 @@
 - import_playbook: ./stage_plays/08_configure_etcd_backup_on_masters.yaml
 - import_playbook: ./stage_plays/09_configure_etcd_on_dvm.yaml
 - import_playbook: ./stage_plays/10_list_k8s_nodes.yaml
+- import_playbook: ./stage_plays/11_create_node_controller_pool.yaml

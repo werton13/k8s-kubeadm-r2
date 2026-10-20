@@ -1,0 +1,11 @@
+---
+# Workers are installed (or the bootstrap has already failed) by the time this
+# runs, so the pool can safely adopt them and the cluster becomes ready for
+# scale-out through the K8sWorkerPool CRD.
+- hosts: masters[0]
+  gather_facts: false
+  become: true
+  tasks:
+    - name: "create the K8sWorkerPool and wait until it is Ready"
+      include_role:
+        name: ../roles/k8s_addons_node_controller_pool

@@ -1,0 +1,67 @@
+{# K8sWorkerPool for the worker set Terraform created.
+   Applied by role k8s_addons_node_controller_pool at stage 11 of the bootstrap.
+   All node_controller_pool_* values come from /etc/k8s_cluster_vars.yaml (Terraform). #}
+apiVersion: infra.example.com/v1alpha1
+kind: K8sWorkerPool
+metadata:
+  name: {{ node_controller_pool_name | to_json }}
+  namespace: {{ node_controller_pool_namespace | to_json }}
+spec:
+  # The pool adopts the existing workers; it starts new VMs only after a patch.
+  replicas: {{ workers_count | int }}
+  namePrefix: {{ k8s_cluster_name | to_json }}
+  bootstrap:
+    osUser: {{ os_admin_username | to_json }}
+    osPasswordHash: {{ node_controller_pool_os_password_hash | to_json }}
+    sshAuthorizedKey: {{ node_controller_pool_ssh_authorized_key | to_json }}
+    nicName: {{ os_nic1_name | to_json }}
+    dns:
+{% for dns_server in [env_dns1 | default(''), env_dns2 | default(''), env_dns3 | default('')] | select | list %}
+      - {{ dns_server | to_json }}
+{% endfor %}
+    k8sVersion: {{ k8s_ver | to_json }}
+    k8sMinorRepo: {{ ('v' ~ (k8s_version | replace('v', '') | replace('_', '.'))) | to_json }}
+  flavor:
+    cpus: {{ node_controller_pool_worker_cpu | int }}
+    memoryMB: {{ node_controller_pool_worker_ram | int }}
+    template: {{ vcloud_vmtmplname | to_json }}
+    disks:
+      - sizeGB: {{ node_controller_pool_worker_disk1_gb | int }}
+        mount: /var
+        busType: paravirtual
+        busNumber: 1
+        unitNumber: 0
+      - sizeGB: {{ node_controller_pool_worker_disk2_gb | int }}
+        mount: /var/lib
+        busType: paravirtual
+        busNumber: 1
+        unitNumber: 1
+  vcd:
+    org: {{ vcloud_orgname | to_json }}
+    vdc: {{ vcloud_vdc | to_json }}
+    vapp: {{ vapp_name | to_json }}
+    orgNetwork: {{ vcloud_orgvnet | to_json }}
+    catalog: {{ vcloud_catalogname | to_json }}
+{% if node_controller_pool_catalog_org | default('') | length > 0 %}
+    catalogOrg: {{ node_controller_pool_catalog_org | to_json }}
+{% endif %}
+  ipPlan:
+    cidr: {{ node_controller_pool_cidr | to_json }}
+    mNodeOffset: {{ node_controller_pool_ip_m_node | int }}
+    wNodeOffset: {{ node_controller_pool_ip_w_node | int }}
+    dvmOffset: {{ node_controller_pool_ip_dvm | int }}
+    kubeapiLB: {{ node_controller_pool_ip_kubeapi_lb | int }}
+    ingressLB: {{ node_controller_pool_ip_ingress_lb | int }}
+    masterCount: {{ masters_count | int }}
+  join:
+    endpoint: {{ (k8s_controlPlane_Endpoint ~ ':6443') | to_json }}
+    tokenTTL: {{ node_controller_pool_token_ttl | to_json }}
+    labels:
+      node-role.kubernetes.io/worker: ""
+  ingressPool:
+    type: {{ node_controller_pool_ingress_type | default('') | to_json }}
+    name: {{ (k8s_cluster_name ~ '-ingress-pool') | to_json }}
+    port: {{ node_controller_pool_ingress_port | int }}
+  scaleDown:
+    minReplicas: {{ node_controller_pool_min_replicas | int }}
+    drainTimeout: 10m

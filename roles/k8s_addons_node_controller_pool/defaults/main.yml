@@ -1,0 +1,13 @@
+---
+# Render and apply the K8sWorkerPool for the workers Terraform already created.
+# Terraform passes every node_controller_pool_* value in vars/cluster_vars.yaml;
+# the defaults below only cover what can be derived inside the cluster.
+node_controller_pool_namespace: "default"
+node_controller_pool_name: "{{ k8s_cluster_name | lower }}"
+node_controller_pool_token_ttl: "1h"
+node_controller_pool_min_replicas: 1
+node_controller_pool_ingress_port: 80
+
+# Wait for the controller to adopt the existing workers and report Ready.
+node_controller_pool_ready_retries: 36
+node_controller_pool_ready_delay: 5

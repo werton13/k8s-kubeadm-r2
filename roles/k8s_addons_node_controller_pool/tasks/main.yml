@@ -1,0 +1,55 @@
+---
+# The pool is created once, at the end of the bootstrap, when every worker is
+# either Ready or the run has already failed. It only adopts the VMs Terraform
+# created, so it does not start a new worker by itself.
+#
+# An existing pool is never modified: operators scale with
+#   kubectl -n <namespace> patch k8sworkerpool <name> --type merge -p '{"spec":{"replicas":N}}'
+# and a re-run of the playbook must not reset that value back to workers_count.
+- name: "STAGE_[ 11 of 11 ] --- create the K8sWorkerPool for the node controller"
+  when:
+    - node_controller_enabled | default(false) | bool
+    - node_controller_create_pool | default(true) | bool
+  block:
+    - name: "Read the current K8sWorkerPool (if any)"
+      kubernetes.core.k8s_info:
+        kubeconfig: /etc/kubernetes/admin.conf
+        api_version: infra.example.com/v1alpha1
+        kind: K8sWorkerPool
+        namespace: "{{ node_controller_pool_namespace }}"
+        name: "{{ node_controller_pool_name }}"
+      register: node_controller_pool_current
+
+    - name: "Create the K8sWorkerPool"
+      kubernetes.core.k8s:
+        kubeconfig: /etc/kubernetes/admin.conf
+        state: present
+        template: pool.yaml.j2
+      when: node_controller_pool_current.resources | length == 0
+
+    - name: "Wait until the pool owns every worker and reports Ready"
+      kubernetes.core.k8s_info:
+        kubeconfig: /etc/kubernetes/admin.conf
+        api_version: infra.example.com/v1alpha1
+        kind: K8sWorkerPool
+        namespace: "{{ node_controller_pool_namespace }}"
+        name: "{{ node_controller_pool_name }}"
+      register: node_controller_pool_status
+      until: >-
+        node_controller_pool_status.resources | length > 0 and
+        (node_controller_pool_status.resources[0].status.observedReplicas | default(0) | int) ==
+        (node_controller_pool_status.resources[0].spec.replicas | default(0) | int) and
+        (node_controller_pool_status.resources[0].status.conditions | default([])
+         | selectattr('type', 'equalto', 'Ready')
+         | selectattr('status', 'equalto', 'True') | list | length) > 0
+      retries: "{{ node_controller_pool_ready_retries }}"
+      delay: "{{ node_controller_pool_ready_delay }}"
+
+    - name: "Show the pool state"
+      ansible.builtin.debug:
+        msg: >-
+          K8sWorkerPool {{ node_controller_pool_namespace }}/{{ node_controller_pool_name }}
+          is Ready with {{ node_controller_pool_status.resources[0].status.observedReplicas }}
+          of {{ node_controller_pool_status.resources[0].spec.replicas }} workers.
+          Scale out with: kubectl -n {{ node_controller_pool_namespace }} patch k8sworkerpool
+          {{ node_controller_pool_name }} --type merge -p '{"spec":{"replicas":N}}'
