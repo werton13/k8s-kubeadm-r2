@@ -81,7 +81,7 @@
         atomic: "{{ node_controller_helm_atomic | bool }}"
         timeout: "{{ node_controller_helm_timeout }}"
         values:
-          replicaCount: {{ node_controller_replica_count | int }}
+          replicaCount: "{{ node_controller_replica_count | int }}"
           image:
             repository: "{{ node_controller_image_repository }}"
             tag: "{{ node_controller_image_tag }}"
