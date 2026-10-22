@@ -78,7 +78,11 @@ kubectl annotate node <cluster>-wrk-03 infra.example.com/delete-worker=true
 ```
 
 Every removal runs cordon -> ingress pool removal -> drain through the eviction
-API -> VolumeAttachment wait -> Node delete -> VM delete -> address release.
+API -> VolumeAttachment wait -> power off the VM -> Node delete -> VM delete ->
+address release. The guest is powered off before the Node object is deleted: a
+Node deleted under a live kubelet re-registers itself within seconds and stays
+behind as a `NotReady` object that nothing owns, whose pods are then never
+garbage collected.
 PodDisruptionBudgets are honoured (the API server refuses the eviction),
 DaemonSet and mirror pods are skipped. The step is bounded by
 `scaleDown.drainTimeout` (default 10m); when it expires the worker becomes
@@ -88,3 +92,37 @@ stop a removal that would destroy data; override the PV check with
 `scaleDown.force: true` or the `infra.example.com/force-delete=true` node
 annotation, never the PDB check.
 
+## Ownership
+
+The pool owns every VM named `<namePrefix>-wrk-*` in the vApp, including the
+workers Terraform created - this role makes that explicit by creating the pool
+with `replicas = workers_count` and `namePrefix = k8s_cluster_name`, so the
+controller adopts the existing VMs instead of cloning new ones. There is no
+read-only class of worker: anything in `status.nodes` is deletable through the
+CRD.
+
+Consequence: do not remove a bootstrap worker with `spec.scaleDown.deleteWorkers`.
+Terraform still owns that VM in state and will re-create it at the same address
+that the pool has already freed and may hand to another worker. Remove bootstrap
+workers through Terraform (`workers.vm_count`) and lower `spec.replicas` in the
+same change.
+
+## Reconciliation policy (0.4.0)
+
+`spec.reconciliation.policy` defaults to `Notify`: a worker that disappears
+outside the control loop is reported (`Ready=False`, reason `WorkerMissing`,
+slot and address kept reserved), not replaced. `AutoHeal` is an explicit
+opt-in that recreates the missing worker in its own slot with the same name and
+address. A `deleteWorkers` entry naming an already-absent worker is pruned and
+`spec.replicas` is aligned with the observed count, so a removal of something
+that is already gone never turns into a replacement.
+
+## Placement and scale from zero (0.4.0)
+
+Removing the last worker, or scaling a pool from 0 to N, needs the controller to
+run outside the pool: a pass that deletes its own last host dies with it. The
+supported topology is the control plane - the manager asks for 100m/512Mi, and
+masters never match the `-wrk-` prefix, so they are not deletable through the
+CRD. With that placement `node_controller_pool_min_replicas = 0` is valid; with
+the controller on a worker the last worker is refused with
+`LastWorkerProtected`.
