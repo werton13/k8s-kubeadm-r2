@@ -6,7 +6,10 @@ node_controller_pool_namespace: "default"
 node_controller_pool_name: "{{ k8s_cluster_name | lower }}"
 node_controller_pool_token_ttl: "1h"
 node_controller_pool_min_replicas: 1
-node_controller_pool_ingress_port: 80
+# NodePort of the ingress controller; NSX-V pool members point here.
+node_controller_pool_ingress_port: 30080
+# NSX-V edge gateway that owns the pool. Needed to add/remove members.
+node_controller_pool_ingress_edge: ""
 
 # Wait for the controller to adopt the existing workers and report Ready.
 node_controller_pool_ready_retries: 36

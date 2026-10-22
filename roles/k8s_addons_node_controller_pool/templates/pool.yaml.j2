@@ -24,6 +24,7 @@ spec:
   flavor:
     cpus: {{ node_controller_pool_worker_cpu | int }}
     memoryMB: {{ node_controller_pool_worker_ram | int }}
+    osDiskGB: {{ node_controller_pool_worker_osdisk_gb | int }}
     template: {{ vcloud_vmtmplname | to_json }}
     disks:
       - sizeGB: {{ node_controller_pool_worker_disk1_gb | int }}
@@ -62,6 +63,9 @@ spec:
     type: {{ node_controller_pool_ingress_type | default('') | to_json }}
     name: {{ (k8s_cluster_name ~ '-ingress-pool') | to_json }}
     port: {{ node_controller_pool_ingress_port | int }}
+{% if node_controller_pool_ingress_edge | default('') | length > 0 %}
+    edge: {{ node_controller_pool_ingress_edge | to_json }}
+{% endif %}
   scaleDown:
     minReplicas: {{ node_controller_pool_min_replicas | int }}
     drainTimeout: 10m

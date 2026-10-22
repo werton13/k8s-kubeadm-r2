@@ -41,7 +41,9 @@ VMs instead of creating new ones.
 | `node_controller_pool_name` | `{{ k8s_cluster_name \| lower }}` | Pool name |
 | `node_controller_pool_token_ttl` | `1h` | Join token TTL |
 | `node_controller_pool_min_replicas` | `1` | `scaleDown.minReplicas` |
-| `node_controller_pool_ingress_port` | `80` | `ingressPool.port` (LB front-end) |
+| `node_controller_pool_ingress_port` | `30080` | `ingressPool.port` - the ingress controller **NodePort** pool members point at, not the virtual-server port |
+| `node_controller_pool_ingress_edge` | `""` | `ingressPool.edge` - NSX-V edge gateway that owns the pool; needed to add/remove members |
+| `node_controller_pool_worker_osdisk_gb` | from Terraform | `flavor.osDiskGB` - grows the cloned template system disk; without it a worker keeps the template disk (10 GB) |
 | `node_controller_pool_ready_retries` | `36` | Convergence wait, attempts |
 | `node_controller_pool_ready_delay` | `5` | Convergence wait, seconds |
 
@@ -58,3 +60,31 @@ kubectl -n default patch k8sworkerpool <cluster-name> --type merge \
 
 Each new worker takes roughly five minutes (VM clone, cloud-init, kubelet join,
 CNI, labels).
+
+## Scale in / removing one worker
+
+Decreasing `spec.replicas` removes the highest-ordinal worker. To remove a
+specific worker, or to replace one:
+
+```bash
+# remove <cluster>-wrk-02 for good: the entry leaves deleteWorkers and
+# replicas is decremented once the VM is gone, so it is not recreated
+kubectl -n default patch k8sworkerpool <cluster-name> --type merge \
+  -p '{"spec":{"scaleDown":{"deleteWorkers":["<cluster>-wrk-02"]}}}'
+
+# replace <cluster>-wrk-03: drained and deleted, replicas unchanged, so the
+# pool creates a new worker
+kubectl annotate node <cluster>-wrk-03 infra.example.com/delete-worker=true
+```
+
+Every removal runs cordon -> ingress pool removal -> drain through the eviction
+API -> VolumeAttachment wait -> Node delete -> VM delete -> address release.
+PodDisruptionBudgets are honoured (the API server refuses the eviction),
+DaemonSet and mirror pods are skipped. The step is bounded by
+`scaleDown.drainTimeout` (default 10m); when it expires the worker becomes
+`Failed` and its VM is kept. `scaleDown.minReplicas` and the node-local PV
+check (hostPath volumes used by the node, PVs pinned to it by nodeAffinity)
+stop a removal that would destroy data; override the PV check with
+`scaleDown.force: true` or the `infra.example.com/force-delete=true` node
+annotation, never the PDB check.
+
