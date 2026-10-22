@@ -61,3 +61,6 @@ node_controller_tolerations:
 node_controller_affinity: {}
 node_controller_priority_class_name: "system-cluster-critical"
 node_controller_dns_policy: ""
+
+# Rendered values file handed to Helm (keeps YAML types instead of strings).
+node_controller_values_file: "/tmp/node_controller_values.yaml"

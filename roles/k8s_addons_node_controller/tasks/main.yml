@@ -70,6 +70,26 @@
         repo_url: "{{ node_controller_chart_repo }}"
       when: not node_controller_chart_repo.startswith('oci://')
 
+    - name: "Render the node-controller Helm values"
+      ansible.builtin.copy:
+        dest: "{{ node_controller_values_file }}"
+        mode: "0600"
+        content: |
+          replicaCount: {{ node_controller_replica_count | int }}
+          image:
+            repository: "{{ node_controller_image_repository }}"
+            tag: "{{ node_controller_image_tag }}"
+            pullPolicy: "{{ node_controller_image_pull_policy }}"
+          namespace:
+            name: "{{ node_controller_namespace }}"
+          vcd:
+            existingSecret: "{{ node_controller_vcd_secret_name }}"
+          nodeSelector: {{ node_controller_node_selector | default({}) | to_json }}
+          tolerations: {{ node_controller_tolerations | default([]) | to_json }}
+          affinity: {{ node_controller_affinity | default({}) | to_json }}
+          priorityClassName: "{{ node_controller_priority_class_name }}"
+          dnsPolicy: "{{ node_controller_dns_policy }}"
+
     - name: "Install or upgrade vcd-k8s-node-controller"
       kubernetes.core.helm:
         name: "{{ node_controller_release_name }}"
@@ -80,18 +100,5 @@
         kubeconfig: /etc/kubernetes/admin.conf
         atomic: "{{ node_controller_helm_atomic | bool }}"
         timeout: "{{ node_controller_helm_timeout }}"
-        values:
-          replicaCount: "{{ node_controller_replica_count | int }}"
-          image:
-            repository: "{{ node_controller_image_repository }}"
-            tag: "{{ node_controller_image_tag }}"
-            pullPolicy: "{{ node_controller_image_pull_policy }}"
-          namespace:
-            name: "{{ node_controller_namespace }}"
-          vcd:
-            existingSecret: "{{ node_controller_vcd_secret_name }}"
-          nodeSelector: "{{ node_controller_node_selector | default({}) | to_json }}"
-          tolerations: "{{ node_controller_tolerations | default([]) | to_json }}"
-          affinity: "{{ node_controller_affinity | default({}) | to_json }}"
-          priorityClassName: "{{ node_controller_priority_class_name }}"
-          dnsPolicy: "{{ node_controller_dns_policy }}"
+        values_files:
+          - "{{ node_controller_values_file }}"
