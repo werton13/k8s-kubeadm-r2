@@ -10,7 +10,7 @@ node_controller_release_name: "vcd-nodescale"
 node_controller_chart_repo: "https://werton13.github.io/vcd-k8s-node-controller"
 node_controller_chart_repo_name: "vcd-k8s-node-controller"
 node_controller_chart_name: "vcd-nodescale"
-node_controller_chart_version: "0.3.2"
+node_controller_chart_version: "0.5.0"
 node_controller_chart_ref: >-
   {{
     (node_controller_chart_repo.startswith('oci://')
@@ -20,7 +20,7 @@ node_controller_chart_ref: >-
 
 node_controller_image_repository: >-
   docker.io/werton13/vcd-k8s-node-controller
-node_controller_image_tag: "0.3.2"
+node_controller_image_tag: "0.5.0"
 node_controller_image_pull_policy: "IfNotPresent"
 
 node_controller_create_namespace: true
@@ -46,3 +46,18 @@ node_controller_vcd_insecure: true
 
 node_controller_helm_timeout: "10m"
 node_controller_helm_atomic: true
+
+# Placement. Control plane is the default: the pool must be able to reach zero,
+# and the last-worker guard refuses to delete the worker the controller runs on
+# (WorkerHostsController). dns_policy stays empty (cluster DNS) unless CoreDNS
+# cannot run on a master.
+node_controller_replica_count: 1
+node_controller_node_selector:
+  node-role.kubernetes.io/control-plane: ""
+node_controller_tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+node_controller_affinity: {}
+node_controller_priority_class_name: "system-cluster-critical"
+node_controller_dns_policy: ""

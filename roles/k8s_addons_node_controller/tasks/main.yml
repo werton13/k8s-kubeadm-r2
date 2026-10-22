@@ -81,6 +81,7 @@
         atomic: "{{ node_controller_helm_atomic | bool }}"
         timeout: "{{ node_controller_helm_timeout }}"
         values:
+          replicaCount: {{ node_controller_replica_count | int }}
           image:
             repository: "{{ node_controller_image_repository }}"
             tag: "{{ node_controller_image_tag }}"
@@ -89,3 +90,8 @@
             name: "{{ node_controller_namespace }}"
           vcd:
             existingSecret: "{{ node_controller_vcd_secret_name }}"
+          nodeSelector: "{{ node_controller_node_selector | default({}) | to_json }}"
+          tolerations: "{{ node_controller_tolerations | default([]) | to_json }}"
+          affinity: "{{ node_controller_affinity | default({}) | to_json }}"
+          priorityClassName: "{{ node_controller_priority_class_name }}"
+          dnsPolicy: "{{ node_controller_dns_policy }}"

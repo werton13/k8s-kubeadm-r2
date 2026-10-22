@@ -31,9 +31,9 @@ for the initial bootstrap.
 | `node_controller_release_name` | `vcd-nodescale` | Helm release name |
 | `node_controller_chart_repo` | `https://werton13.github.io/vcd-k8s-node-controller` | Helm repository or OCI URL |
 | `node_controller_chart_name` | `vcd-nodescale` | Chart name |
-| `node_controller_chart_version` | `0.3.2` | Chart version |
+| `node_controller_chart_version` | `0.5.0` | Chart version |
 | `node_controller_image_repository` | `docker.io/werton13/vcd-k8s-node-controller` | Controller image |
-| `node_controller_image_tag` | `0.3.2` | Controller image tag |
+| `node_controller_image_tag` | `0.5.0` | Controller image tag |
 | `node_controller_create_namespace` | `true` | Create the namespace |
 | `node_controller_create_vcd_secret` | `true` | Create the vCD credentials Secret |
 | `node_controller_vcd_secret_name` | `vcd-credentials` | Existing/new Secret name |
@@ -42,3 +42,9 @@ for the initial bootstrap.
 | `node_controller_vcd_insecure` | `true` | Skip vCD TLS verification |
 | `node_controller_helm_timeout` | `10m` | Helm timeout |
 | `node_controller_helm_atomic` | `true` | Roll back failed installs |
+| `node_controller_replica_count` | `1` | Controller replicas |
+| `node_controller_node_selector` | control-plane label | Placement; control plane by default so the pool can reach zero |
+| `node_controller_tolerations` | control-plane NoSchedule | Placement toleration |
+| `node_controller_affinity` | `{}` | Extra affinity/podAntiAffinity |
+| `node_controller_priority_class_name` | `system-cluster-critical` | Keeps the controller above the workloads it evicts |
+| `node_controller_dns_policy` | empty | Empty keeps cluster DNS; `Default` if CoreDNS cannot run on a master |
