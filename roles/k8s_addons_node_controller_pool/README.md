@@ -126,3 +126,25 @@ masters never match the `-wrk-` prefix, so they are not deletable through the
 CRD. With that placement `node_controller_pool_min_replicas = 0` is valid; with
 the controller on a worker the last worker is refused with
 `LastWorkerProtected`.
+
+## Emptying the pool
+
+Taking the pool to zero is an explicit owner decision, never a side effect of a
+count: it needs `node_controller_pool_min_replicas = 0` and, from 0.4.0,
+`scaleDown.allowLastWorker: true`; otherwise the request is refused with
+`LastWorkerProtected`. Removing the last worker is a critical event for the
+payload - ingress, CoreDNS on that node, the CSI plugins and every DaemonSet are
+evicted, and a PodDisruptionBudget whose `minAvailable` equals its replica count
+legitimately blocks the drain forever, leaving the worker in place with `Failed`
+on the node. With no workers left only the control plane, CoreDNS on a master,
+the controller and the vCD API remain, and refilling the pool is a cold start
+measured in minutes per worker.
+
+## Rolling compute-spec changes (0.5.0, not implemented)
+
+Changing `spec.flavor` will not need a redeploy: the controller takes each
+worker through drain -> power off -> resize the VM -> power on -> wait Ready ->
+uncordon. `rollout.maxUnavailable` chooses one-at-a-time (default) or batches;
+`status.rollout` records the in-flight worker so a controller restart resumes
+instead of restarting the roll. PDBs act as the hard brake on how many workers
+can be off the pool at once.
