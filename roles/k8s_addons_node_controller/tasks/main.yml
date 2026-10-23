@@ -146,6 +146,17 @@
           register: node_controller_crd_files
           failed_when: false
 
+        - name: "Verify the pinned chart ships its CRDs"
+          ansible.builtin.assert:
+            that:
+              - node_controller_crd_files.files | default([]) | length > 0
+            fail_msg: >-
+              the pinned chart {{ node_controller_chart_version }} has no
+              crds/*.yaml under {{ node_controller_chart_dir.path }}/{{
+              node_controller_chart_name }}; refusing to install a release whose
+              CRD would never be upgraded.
+            quiet: true
+
         - name: "Apply the node-controller CRDs"
           kubernetes.core.k8s:
             kubeconfig: /etc/kubernetes/admin.conf
