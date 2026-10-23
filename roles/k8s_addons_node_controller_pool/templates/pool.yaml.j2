@@ -1,7 +1,7 @@
 {# K8sWorkerPool for the worker set Terraform created.
    Applied by role k8s_addons_node_controller_pool at stage 11 of the bootstrap.
    All node_controller_pool_* values come from /etc/k8s_cluster_vars.yaml (Terraform). #}
-apiVersion: infra.example.com/v1alpha1
+apiVersion: k8s-nodescale.github.io/v1alpha1
 kind: K8sWorkerPool
 metadata:
   name: {{ node_controller_pool_name | to_json }}
@@ -46,11 +46,11 @@ spec:
 {% if node_controller_pool_catalog_org | default('') | length > 0 %}
     catalogOrg: {{ node_controller_pool_catalog_org | to_json }}
 {% endif %}
+    dvmOffset: {{ node_controller_pool_ip_dvm | int }}
   ipPlan:
     cidr: {{ node_controller_pool_cidr | to_json }}
     mNodeOffset: {{ node_controller_pool_ip_m_node | int }}
     wNodeOffset: {{ node_controller_pool_ip_w_node | int }}
-    dvmOffset: {{ node_controller_pool_ip_dvm | int }}
     kubeapiLB: {{ node_controller_pool_ip_kubeapi_lb | int }}
     ingressLB: {{ node_controller_pool_ip_ingress_lb | int }}
     masterCount: {{ masters_count | int }}

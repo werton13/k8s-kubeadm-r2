@@ -14,7 +14,7 @@
     - name: "Read the current K8sWorkerPool (if any)"
       kubernetes.core.k8s_info:
         kubeconfig: /etc/kubernetes/admin.conf
-        api_version: infra.example.com/v1alpha1
+        api_version: k8s-nodescale.github.io/v1alpha1
         kind: K8sWorkerPool
         namespace: "{{ node_controller_pool_namespace }}"
         name: "{{ node_controller_pool_name }}"
@@ -30,7 +30,7 @@
     - name: "Wait until the pool owns every worker and reports Ready"
       kubernetes.core.k8s_info:
         kubeconfig: /etc/kubernetes/admin.conf
-        api_version: infra.example.com/v1alpha1
+        api_version: k8s-nodescale.github.io/v1alpha1
         kind: K8sWorkerPool
         namespace: "{{ node_controller_pool_namespace }}"
         name: "{{ node_controller_pool_name }}"

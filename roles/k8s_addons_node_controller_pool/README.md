@@ -29,7 +29,7 @@ VMs instead of creating new ones.
 - `kubernetes.core` collection (already in `requirements.yml`).
 - `/etc/kubernetes/admin.conf` on the target master.
 - The chart from `k8s_addons_node_controller` installed, i.e. the CRD
-  `k8sworkerpools.infra.example.com` must exist.
+  `k8sworkerpools.k8s-nodescale.github.io` must exist.
 
 ## Key variables
 
@@ -74,7 +74,7 @@ kubectl -n default patch k8sworkerpool <cluster-name> --type merge \
 
 # replace <cluster>-wrk-03: drained and deleted, replicas unchanged, so the
 # pool creates a new worker
-kubectl annotate node <cluster>-wrk-03 infra.example.com/delete-worker=true
+kubectl annotate node <cluster>-wrk-03 k8s-nodescale.github.io/delete-worker=true
 ```
 
 Every removal runs cordon -> ingress pool removal -> drain through the eviction
@@ -89,7 +89,7 @@ DaemonSet and mirror pods are skipped. The step is bounded by
 `Failed` and its VM is kept. `scaleDown.minReplicas` and the node-local PV
 check (hostPath volumes used by the node, PVs pinned to it by nodeAffinity)
 stop a removal that would destroy data; override the PV check with
-`scaleDown.force: true` or the `infra.example.com/force-delete=true` node
+`scaleDown.force: true` or the `k8s-nodescale.github.io/force-delete=true` node
 annotation, never the PDB check.
 
 ## Ownership
