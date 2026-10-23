@@ -25,17 +25,23 @@
 #   - create list of such hosts
 #   - call install_k8s_binaries role for those hosts
 
-    # check install state of kubeadm and register result
-    - name: "check if k8s binaries was installed - if kubeadm is absent - host counted as unready for processing"
+    # Check every binary the following stages rely on, not only kubeadm: a host
+    # that got kubeadm and kubelet but not cri-tools passed this check and stage
+    # 07 then failed on crictl with an error that pointed at the wrong stage.
+    - name: "check if k8s binaries were installed - a host with any of them missing counts as unready"
       stat:
-        path: "/usr/bin/kubeadm"
+        path: "/usr/bin/{{ item }}"
+      loop:
+        - kubeadm
+        - kubelet
+        - crictl
       register: k8s_binfile_state
     
-    # if kubeadm was not found - set fact no_kubeadm with hostname as value
-    - name: "add hosts without kubeadm component to retry_hosts variable"
+    # any missing binary - set fact no_kubeadm with hostname as value
+    - name: "add hosts without the full binary set to retry_hosts variable"
       set_fact:
         no_kubeadm: "{{  inventory_hostname  }}"
-      when: k8s_binfile_state.stat.exists == false
+      when: k8s_binfile_state.results | selectattr('stat.exists', 'equalto', false) | list | length > 0
 
 - hosts: dvm
   become: true
@@ -85,6 +91,7 @@
       loop:
         - 'kubelet'
         - 'kubeadm'
+        - 'crictl'
       register: k8s_binfile_state
       until: k8s_binfile_state.stat.exists == true
       retries: 100
