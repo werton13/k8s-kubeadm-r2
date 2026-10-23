@@ -11,8 +11,18 @@ variables through `vars/cluster_vars.yaml`.
 1. Verifies that Terraform ownership loss was acknowledged.
 2. Creates the target namespace (unless `node_controller_create_namespace = false`).
 3. Creates the vCD credentials Secret (unless `node_controller_create_vcd_secret = false`).
-4. Adds the Helm repository and installs/upgrades the chart with the pinned
-   image, tag, pull policy and existing Secret.
+4. Adds the Helm repository, pulls the pinned chart into a temporary directory
+   and applies every file from its `crds/` directory.
+5. Installs/upgrades the chart from that same directory with the pinned image,
+   tag, pull policy and existing Secret.
+
+Step 4 exists because Helm applies `crds/` on install only: `helm upgrade` never
+touches a CRD. Without it an upgraded release would run against the previous
+CRD, which prunes newer `status` fields and drops new subresources such as
+`scale`. The apply is additive and idempotent, so a re-run changes nothing.
+A release installed before this step existed (or by `helm install` straight
+from the repository) needs one manual upgrade: apply the new chart's CRDs,
+then `helm upgrade` - the playbook does not migrate such a release.
 
 ## Important
 

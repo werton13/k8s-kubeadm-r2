@@ -90,15 +90,87 @@
           priorityClassName: "{{ node_controller_priority_class_name }}"
           dnsPolicy: "{{ node_controller_dns_policy }}"
 
-    - name: "Install or upgrade vcd-k8s-node-controller"
-      kubernetes.core.helm:
-        name: "{{ node_controller_release_name }}"
-        chart_ref: "{{ node_controller_chart_ref }}"
-        chart_version: "{{ node_controller_chart_version }}"
-        release_namespace: "{{ node_controller_namespace }}"
-        create_namespace: "{{ node_controller_create_namespace | bool }}"
-        kubeconfig: /etc/kubernetes/admin.conf
-        atomic: "{{ node_controller_helm_atomic | bool }}"
-        timeout: "{{ node_controller_helm_timeout }}"
-        values_files:
-          - "{{ node_controller_values_file }}"
+    # Helm applies crds/ on install only: "helm upgrade" never touches it. A CRD
+    # older than the chart prunes the newer status fields and drops new
+    # subresources (e.g. scale), so the CRDs from the pinned chart are applied
+    # before every install/upgrade. The apply is additive and idempotent, so it
+    # is safe on a fresh cluster and on a re-run.
+    - name: "Apply the CRDs shipped with the pinned node-controller chart"
+      block:
+        - name: "Create a temporary directory for the pinned chart"
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: vcd-nodescale-chart-
+          register: node_controller_chart_dir
+          changed_when: false
+
+        # --repo makes helm fetch the index from the repository URL instead of
+        # the local cache: helm_repository only adds the repository, so a stale
+        # cache would fail with "no chart version found" right after a release.
+        - name: "Pull the pinned node-controller chart from the repository"
+          ansible.builtin.command:
+            argv:
+              - helm
+              - pull
+              - "{{ node_controller_chart_name }}"
+              - --repo
+              - "{{ node_controller_chart_repo }}"
+              - --version
+              - "{{ node_controller_chart_version }}"
+              - --untar
+              - --untardir
+              - "{{ node_controller_chart_dir.path }}"
+          changed_when: false
+          when: not node_controller_chart_repo.startswith('oci://')
+
+        - name: "Pull the pinned node-controller chart from the OCI registry"
+          ansible.builtin.command:
+            argv:
+              - helm
+              - pull
+              - "{{ node_controller_chart_ref }}"
+              - --version
+              - "{{ node_controller_chart_version }}"
+              - --untar
+              - --untardir
+              - "{{ node_controller_chart_dir.path }}"
+          changed_when: false
+          when: node_controller_chart_repo.startswith('oci://')
+
+        - name: "List the CRD files shipped with the chart"
+          ansible.builtin.find:
+            paths: >-
+              {{ node_controller_chart_dir.path }}/{{
+              node_controller_chart_name }}/crds
+            patterns: "*.yaml"
+          register: node_controller_crd_files
+          failed_when: false
+
+        - name: "Apply the node-controller CRDs"
+          kubernetes.core.k8s:
+            kubeconfig: /etc/kubernetes/admin.conf
+            state: present
+            src: "{{ item.path }}"
+          loop: "{{ node_controller_crd_files.files | default([]) }}"
+          loop_control:
+            label: "{{ item.path | basename }}"
+
+        - name: "Install or upgrade vcd-k8s-node-controller"
+          kubernetes.core.helm:
+            name: "{{ node_controller_release_name }}"
+            chart_ref: >-
+              {{ node_controller_chart_dir.path }}/{{
+              node_controller_chart_name }}
+            release_namespace: "{{ node_controller_namespace }}"
+            create_namespace: "{{ node_controller_create_namespace | bool }}"
+            kubeconfig: /etc/kubernetes/admin.conf
+            atomic: "{{ node_controller_helm_atomic | bool }}"
+            timeout: "{{ node_controller_helm_timeout }}"
+            values_files:
+              - "{{ node_controller_values_file }}"
+      always:
+        - name: "Remove the temporary chart directory"
+          ansible.builtin.file:
+            path: "{{ node_controller_chart_dir.path }}"
+            state: absent
+          when: node_controller_chart_dir.path is defined
