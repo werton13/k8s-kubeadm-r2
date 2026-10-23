@@ -29,11 +29,11 @@ for the initial bootstrap.
 | `node_controller_acknowledge_terraform_ownership_loss` | `false` | Required when enabled |
 | `node_controller_namespace` | `vcd-nodescale-system` | Release namespace |
 | `node_controller_release_name` | `vcd-nodescale` | Helm release name |
-| `node_controller_chart_repo` | `https://werton13.github.io/vcd-k8s-node-controller` | Helm repository or OCI URL |
+| `node_controller_chart_repo` | `https://k8s-nodescale.github.io/vcd-k8s-node-controller` | Helm repository or OCI URL |
 | `node_controller_chart_name` | `vcd-nodescale` | Chart name |
-| `node_controller_chart_version` | `0.5.1` | Chart version |
+| `node_controller_chart_version` | `0.6.0` | Chart version |
 | `node_controller_image_repository` | `docker.io/werton13/vcd-k8s-node-controller` | Controller image |
-| `node_controller_image_tag` | `0.5.1` | Controller image tag |
+| `node_controller_image_tag` | `0.6.0` | Controller image tag |
 | `node_controller_create_namespace` | `true` | Create the namespace |
 | `node_controller_create_vcd_secret` | `true` | Create the vCD credentials Secret |
 | `node_controller_vcd_secret_name` | `vcd-credentials` | Existing/new Secret name |
