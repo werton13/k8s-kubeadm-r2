@@ -64,6 +64,71 @@
       when: node_controller_create_vcd_secret | default(true) | bool
       no_log: true
 
+    # The two default accounts exist once per cluster. The passwords are
+    # generated on the control host (lookup('password') keeps the file, so a
+    # re-run returns the same value) and only hashed into the Secret when it
+    # does not exist yet: rotating a password by hand must survive this run.
+    - name: "Read or generate the management UI passwords"
+      ansible.builtin.set_fact:
+        node_controller_ui_admin_password: >-
+          {{ lookup('ansible.builtin.password',
+                    node_controller_ui_credentials_dir ~ '/' ~ inventory_hostname ~ '/nodescale-ui-admin length=24 chars=ascii_letters,digits') }}
+        node_controller_ui_viewer_password: >-
+          {{ lookup('ansible.builtin.password',
+                    node_controller_ui_credentials_dir ~ '/' ~ inventory_hostname ~ '/nodescale-ui-viewer length=24 chars=ascii_letters,digits') }}
+      when:
+        - node_controller_ui_enabled | bool
+        - node_controller_ui_auth_enabled | bool
+      no_log: true
+
+    - name: "Look up the management UI accounts Secret"
+      kubernetes.core.k8s_info:
+        kubeconfig: /etc/kubernetes/admin.conf
+        api_version: v1
+        kind: Secret
+        namespace: "{{ node_controller_namespace }}"
+        name: "{{ node_controller_ui_auth_secret_name }}"
+      register: node_controller_ui_secret
+      when:
+        - node_controller_ui_enabled | bool
+        - node_controller_ui_auth_enabled | bool
+
+    - name: "Create the management UI accounts Secret"
+      kubernetes.core.k8s:
+        kubeconfig: /etc/kubernetes/admin.conf
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ node_controller_ui_auth_secret_name }}"
+            namespace: "{{ node_controller_namespace }}"
+          type: Opaque
+          stringData:
+            users.yaml: |
+              admins:
+                - username: {{ node_controller_ui_admin_username }}
+                  passwordHash: "{{ node_controller_ui_admin_password | password_hash('bcrypt') }}"
+              viewers:
+                - username: {{ node_controller_ui_viewer_username }}
+                  passwordHash: "{{ node_controller_ui_viewer_password | password_hash('bcrypt') }}"
+      when:
+        - node_controller_ui_enabled | bool
+        - node_controller_ui_auth_enabled | bool
+        - node_controller_ui_secret.resources | length == 0
+      no_log: true
+
+    - name: "Say where the management UI passwords live"
+      ansible.builtin.debug:
+        msg: >-
+          Management UI: {{ node_controller_ui_admin_username }} (admins) and
+          {{ node_controller_ui_viewer_username }} (viewers). Passwords are in
+          {{ node_controller_ui_credentials_dir }}/{{ inventory_hostname }}/nodescale-ui-<account>
+          on this host; an existing Secret is kept as it is.
+      when:
+        - node_controller_ui_enabled | bool
+        - node_controller_ui_auth_enabled | bool
+
     - name: "Add the node-controller Helm repository"
       kubernetes.core.helm_repository:
         name: "{{ node_controller_chart_repo_name }}"
@@ -89,6 +154,14 @@
           affinity: {{ node_controller_affinity | default({}) | to_json }}
           priorityClassName: "{{ node_controller_priority_class_name }}"
           dnsPolicy: "{{ node_controller_dns_policy }}"
+          ui:
+            enabled: {{ node_controller_ui_enabled | bool | lower }}
+            auth:
+              enabled: {{ node_controller_ui_auth_enabled | bool | lower }}
+              secretName: "{{ node_controller_ui_auth_secret_name }}"
+              createSecret: false
+            ingress:
+              enabled: {{ node_controller_ui_ingress_enabled | bool | lower }}
 
     # Helm applies crds/ on install only: "helm upgrade" never touches it. A CRD
     # older than the chart prunes the newer status fields and drops new

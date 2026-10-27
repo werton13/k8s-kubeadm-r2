@@ -10,7 +10,7 @@ node_controller_release_name: "vcd-nodescale"
 node_controller_chart_repo: "https://k8s-nodescale.github.io/vcd-k8s-node-controller"
 node_controller_chart_repo_name: "vcd-k8s-node-controller"
 node_controller_chart_name: "vcd-nodescale"
-node_controller_chart_version: "0.9.0"
+node_controller_chart_version: "0.10.0"
 node_controller_chart_ref: >-
   {{
     (node_controller_chart_repo.startswith('oci://')
@@ -20,7 +20,7 @@ node_controller_chart_ref: >-
 
 node_controller_image_repository: >-
   docker.io/werton13/vcd-k8s-node-controller
-node_controller_image_tag: "0.9.0"
+node_controller_image_tag: "0.10.0"
 node_controller_image_pull_policy: "IfNotPresent"
 
 node_controller_create_namespace: true
@@ -64,3 +64,16 @@ node_controller_dns_policy: ""
 
 # Rendered values file handed to Helm (keeps YAML types instead of strings).
 node_controller_values_file: "/tmp/node_controller_values.yaml"
+
+# Optional management UI (chart value ui.*): a page and a small API over the
+# same CRD. Off by default. When it is on, the two default accounts are
+# generated here, on the control host, and the Secret is created once - a
+# manual password rotation must survive a re-run of this playbook.
+node_controller_ui_enabled: false
+node_controller_ui_ingress_enabled: true
+node_controller_ui_auth_enabled: true
+node_controller_ui_auth_secret_name: "nodescale-ui-auth"
+node_controller_ui_admin_username: "admin"
+node_controller_ui_viewer_username: "viewer"
+# Passwords are written here, mode 0600, and never leave the control host.
+node_controller_ui_credentials_dir: "{{ playbook_dir | default('.') }}/.credentials"
