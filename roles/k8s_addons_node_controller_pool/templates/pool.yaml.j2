@@ -10,6 +10,8 @@ spec:
   # The pool adopts the existing workers; it starts new VMs only after a patch.
   replicas: {{ workers_count | int }}
   namePrefix: {{ k8s_cluster_name | to_json }}
+  # vCloud Director is the platform this bootstrap built the cluster on.
+  provider: vcd
   bootstrap:
     osUser: {{ os_admin_username | to_json }}
     osPasswordHash: {{ node_controller_pool_os_password_hash | to_json }}
