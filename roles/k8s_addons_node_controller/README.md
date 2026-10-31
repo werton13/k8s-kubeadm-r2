@@ -41,9 +41,9 @@ for the initial bootstrap.
 | `node_controller_release_name` | `vcd-nodescale` | Helm release name |
 | `node_controller_chart_repo` | `https://k8s-nodescale.github.io/vcd-k8s-node-controller` | Helm repository or OCI URL |
 | `node_controller_chart_name` | `vcd-nodescale` | Chart name |
-| `node_controller_chart_version` | `0.12.2` | Chart version |
+| `node_controller_chart_version` | `0.12.3` | Chart version |
 | `node_controller_image_repository` | `docker.io/werton13/vcd-k8s-node-controller` | Controller image |
-| `node_controller_image_tag` | `0.12.2` | Controller image tag |
+| `node_controller_image_tag` | `0.12.3` | Controller image tag |
 | `node_controller_create_namespace` | `true` | Create the namespace |
 | `node_controller_create_vcd_secret` | `true` | Create the vCD credentials Secret |
 | `node_controller_vcd_secret_name` | `vcd-credentials` | Existing/new Secret name |
