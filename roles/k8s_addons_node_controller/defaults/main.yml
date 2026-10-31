@@ -10,7 +10,7 @@ node_controller_release_name: "vcd-nodescale"
 node_controller_chart_repo: "https://k8s-nodescale.github.io/vcd-k8s-node-controller"
 node_controller_chart_repo_name: "vcd-k8s-node-controller"
 node_controller_chart_name: "vcd-nodescale"
-node_controller_chart_version: "0.11.23"
+node_controller_chart_version: "0.11.24"
 node_controller_chart_ref: >-
   {{
     (node_controller_chart_repo.startswith('oci://')
@@ -20,7 +20,7 @@ node_controller_chart_ref: >-
 
 node_controller_image_repository: >-
   docker.io/werton13/vcd-k8s-node-controller
-node_controller_image_tag: "0.11.23"
+node_controller_image_tag: "0.11.24"
 node_controller_image_pull_policy: "IfNotPresent"
 
 node_controller_create_namespace: true
