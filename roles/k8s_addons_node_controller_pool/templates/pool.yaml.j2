@@ -16,6 +16,12 @@ spec:
     osUser: {{ os_admin_username | to_json }}
     osPasswordHash: {{ node_controller_pool_os_password_hash | to_json }}
     sshAuthorizedKey: {{ node_controller_pool_ssh_authorized_key | to_json }}
+{% set ssh_sources = node_controller_pool_ssh_allowed_sources | default(none) %}
+{% if ssh_sources %}
+    # The same sshd AllowUsers list the Terraform baseline writes into every
+    # node, so a worker the controller creates admits the operator's networks.
+    sshAllowedSources: {{ ssh_sources | to_json }}
+{% endif %}
     nicName: {{ os_nic1_name | to_json }}
     dns:
 {% for dns_server in [env_dns1 | default(''), env_dns2 | default(''), env_dns3 | default('')] | select | list %}
@@ -48,9 +54,12 @@ spec:
 {% if node_controller_pool_catalog_org | default('') | length > 0 %}
     catalogOrg: {{ node_controller_pool_catalog_org | to_json }}
 {% endif %}
-    dvmOffset: {{ node_controller_pool_ip_dvm | int }}
   ipPlan:
     cidr: {{ node_controller_pool_cidr | to_json }}
+    # Terraform's ip_plan: the relative offsets plus the shift, so the pool's
+    # window is the address range Terraform left free.
+    vmIPOffset: {{ node_controller_pool_ip_vm_ip_offset | default('0') | int }}
+    dvmOffset: {{ node_controller_pool_ip_dvm | int }}
     mNodeOffset: {{ node_controller_pool_ip_m_node | int }}
     wNodeOffset: {{ node_controller_pool_ip_w_node | int }}
     kubeapiLB: {{ node_controller_pool_ip_kubeapi_lb | int }}
