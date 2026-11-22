@@ -140,6 +140,9 @@
         dest: "{{ node_controller_values_file }}"
         mode: "0600"
         content: |
+          # The chart serves one platform per installation and refuses to render
+          # without this: a vCD release clones through the vCD API.
+          platform: "vcd"
           replicaCount: {{ node_controller_replica_count | int }}
           image:
             repository: "{{ node_controller_image_repository }}"
