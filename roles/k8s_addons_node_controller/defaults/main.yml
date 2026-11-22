@@ -86,6 +86,9 @@ node_controller_ui_enabled: false
 node_controller_ui_ingress_enabled: true
 node_controller_ui_auth_enabled: true
 node_controller_ui_auth_secret_name: "nodescale-ui-auth"
+# Where the generated passwords are written once, next to the hashes: the owner
+# reads this Secret and deletes it; the server never reads it.
+node_controller_ui_initial_passwords_secret_name: "nodescale-ui-initial-passwords"
 node_controller_ui_admin_username: "admin"
 node_controller_ui_viewer_username: "viewer"
 # Passwords are written here, mode 0600, and never leave the control host.

@@ -118,6 +118,31 @@
         - node_controller_ui_secret.resources | length == 0
       no_log: true
 
+    # The passwords belong to the hashes above, so they are written in the same
+    # step: only when the accounts Secret did not exist. If it did, the plaintext
+    # is unknown (or was already deleted) and inventing it would produce a Secret
+    # whose passwords do not match the hashes.
+    - name: "Create the management UI passwords Secret"
+      kubernetes.core.k8s:
+        kubeconfig: /etc/kubernetes/admin.conf
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ node_controller_ui_initial_passwords_secret_name }}"
+            namespace: "{{ node_controller_namespace }}"
+          type: Opaque
+          stringData:
+            passwords: |
+              {{ node_controller_ui_admin_username }}: {{ node_controller_ui_admin_password }}
+              {{ node_controller_ui_viewer_username }}: {{ node_controller_ui_viewer_password }}
+      when:
+        - node_controller_ui_enabled | bool
+        - node_controller_ui_auth_enabled | bool
+        - node_controller_ui_secret.resources | length == 0
+      no_log: true
+
     - name: "Say where the management UI passwords live"
       ansible.builtin.debug:
         msg: >-
