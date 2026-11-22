@@ -55,7 +55,6 @@ ui:
   auth:
     enabled: {{ node_controller_ui_auth_enabled | bool | lower }}
     secretName: "{{ node_controller_ui_auth_secret_name }}"
-    # createSecret is left to the chart default (true): it writes users.yaml and
-    # initial-passwords when the Secret is absent, and never rotates an existing one.
+    createSecret: false
   ingress:
     enabled: {{ node_controller_ui_ingress_enabled | bool | lower }}
