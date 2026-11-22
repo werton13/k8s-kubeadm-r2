@@ -27,6 +27,12 @@ spec:
 {% for dns_server in [env_dns1 | default(''), env_dns2 | default(''), env_dns3 | default('')] | select | list %}
       - {{ dns_server | to_json }}
 {% endfor %}
+{% set ntp = node_controller_pool_ntp_servers | default([]) %}
+{% if ntp %}
+    # The cluster's own time sources, so a worker created later keeps the same
+    # clock as the nodes Terraform built.
+    ntpServers: {{ ntp | to_json }}
+{% endif %}
     k8sVersion: {{ k8s_ver | to_json }}
     k8sMinorRepo: {{ ('v' ~ (k8s_version | replace('v', '') | replace('_', '.'))) | to_json }}
   flavor:

@@ -9,6 +9,9 @@ node_controller_pool_ip_vm_ip_offset: "0"
 # sshd AllowUsers list (Terraform os_config.allowed_ssh_ips). Empty keeps the
 # template image's own line.
 node_controller_pool_ssh_allowed_sources: []
+# NTP sources for the pool (Terraform os_config.ntp_srv1/ntp_srv2); empty
+# leaves the worker on the template image's own sources.
+node_controller_pool_ntp_servers: []
 node_controller_pool_name: "{{ k8s_cluster_name | lower }}"
 node_controller_pool_token_ttl: "1h"
 node_controller_pool_min_replicas: 1
