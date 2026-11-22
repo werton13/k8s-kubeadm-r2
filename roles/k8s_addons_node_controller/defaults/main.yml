@@ -44,6 +44,19 @@ node_controller_vcd_url: >-
   }}
 node_controller_vcd_insecure: true
 
+# Guest policy for the workers the controller creates (chart bootstrap.defaults).
+# Terraform passes these from node_controller.bootstrap; the pool in the CR can
+# override any of them per pool.
+node_controller_bootstrap_create: true
+node_controller_bootstrap_configmap_name: "nodescale-bootstrap"
+node_controller_bootstrap_ntp_servers: []
+node_controller_bootstrap_apt_mirror: ""
+node_controller_bootstrap_sysctls: {}
+node_controller_bootstrap_kernel_modules: []
+node_controller_bootstrap_containerd_sandbox_image: ""
+node_controller_bootstrap_ca_bundle_file: ""
+node_controller_bootstrap_ssh_allowed_sources: []
+
 node_controller_helm_timeout: "10m"
 node_controller_helm_atomic: true
 

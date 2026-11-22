@@ -1,0 +1,60 @@
+# The chart serves one platform per installation and refuses to render
+# without this: a vCD release clones through the vCD API.
+platform: "vcd"
+replicaCount: {{ node_controller_replica_count | int }}
+image:
+  repository: "{{ node_controller_image_repository }}"
+  tag: "{{ node_controller_image_tag }}"
+  pullPolicy: "{{ node_controller_image_pull_policy }}"
+namespace:
+  name: "{{ node_controller_namespace }}"
+vcd:
+  existingSecret: "{{ node_controller_vcd_secret_name }}"
+nodeSelector: {{ node_controller_node_selector | default({}) | to_json }}
+tolerations: {{ node_controller_tolerations | default([]) | to_json }}
+affinity: {{ node_controller_affinity | default({}) | to_json }}
+priorityClassName: "{{ node_controller_priority_class_name }}"
+dnsPolicy: "{{ node_controller_dns_policy }}"
+bootstrap:
+  create: {{ node_controller_bootstrap_create | default(true) | bool | lower }}
+  configMapName: "{{ node_controller_bootstrap_configmap_name }}"
+{% if (node_controller_bootstrap_ntp_servers | default([]) | length > 0)
+      or (node_controller_bootstrap_apt_mirror | default('') | length > 0)
+      or (node_controller_bootstrap_sysctls | default({}) | length > 0)
+      or (node_controller_bootstrap_kernel_modules | default([]) | length > 0)
+      or (node_controller_bootstrap_containerd_sandbox_image | default('') | length > 0)
+      or (node_controller_bootstrap_ssh_allowed_sources | default([]) | length > 0) %}
+  defaults:
+{% if node_controller_bootstrap_ntp_servers | default([]) | length > 0 %}
+    ntpServers: {{ node_controller_bootstrap_ntp_servers | to_json }}
+{% endif %}
+{% if node_controller_bootstrap_apt_mirror | default('') | length > 0 %}
+    apt:
+      mirror: "{{ node_controller_bootstrap_apt_mirror }}"
+{% endif %}
+{% if node_controller_bootstrap_sysctls | default({}) | length > 0 %}
+    sysctls: {{ node_controller_bootstrap_sysctls | to_json }}
+{% endif %}
+{% if node_controller_bootstrap_kernel_modules | default([]) | length > 0 %}
+    kernelModules: {{ node_controller_bootstrap_kernel_modules | to_json }}
+{% endif %}
+{% if node_controller_bootstrap_containerd_sandbox_image | default('') | length > 0 %}
+    containerd:
+      sandboxImage: "{{ node_controller_bootstrap_containerd_sandbox_image }}"
+{% endif %}
+{% if node_controller_bootstrap_ssh_allowed_sources | default([]) | length > 0 %}
+    sshAllowedSources: {{ node_controller_bootstrap_ssh_allowed_sources | to_json }}
+{% endif %}
+{% endif %}
+{% if node_controller_ca_bundle is defined and node_controller_ca_bundle.content | default('') | length > 0 %}
+  caBundle: |
+{{ node_controller_ca_bundle.content | b64decode | indent(4, true) }}
+{% endif %}
+ui:
+  enabled: {{ node_controller_ui_enabled | bool | lower }}
+  auth:
+    enabled: {{ node_controller_ui_auth_enabled | bool | lower }}
+    secretName: "{{ node_controller_ui_auth_secret_name }}"
+    createSecret: false
+  ingress:
+    enabled: {{ node_controller_ui_ingress_enabled | bool | lower }}
