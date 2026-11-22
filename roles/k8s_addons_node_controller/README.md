@@ -37,7 +37,7 @@ for the initial bootstrap.
 | --- | --- | --- |
 | `node_controller_enabled` | `false` | Install the controller |
 | `node_controller_acknowledge_terraform_ownership_loss` | `false` | Required when enabled |
-| `node_controller_namespace` | `vcd-nodescale-system` | Release namespace |
+| `node_controller_namespace` | `nodescale-system` | Release namespace |
 | `node_controller_release_name` | `vcd-nodescale` | Helm release name |
 | `node_controller_chart_repo` | `https://k8s-nodescale.github.io/vcd-k8s-node-controller` | Helm repository or OCI URL |
 | `node_controller_chart_name` | `vcd-nodescale` | Chart name |

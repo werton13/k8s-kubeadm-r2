@@ -5,7 +5,7 @@
 node_controller_enabled: false
 node_controller_acknowledge_terraform_ownership_loss: false
 
-node_controller_namespace: "vcd-nodescale-system"
+node_controller_namespace: "nodescale-system"
 node_controller_release_name: "vcd-nodescale"
 node_controller_chart_repo: "https://k8s-nodescale.github.io/vcd-k8s-node-controller"
 node_controller_chart_repo_name: "vcd-k8s-node-controller"
