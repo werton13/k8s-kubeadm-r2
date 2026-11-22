@@ -112,11 +112,6 @@
               viewers:
                 - username: {{ node_controller_ui_viewer_username }}
                   passwordHash: "{{ node_controller_ui_viewer_password | password_hash('bcrypt') }}"
-            # Same key the chart writes when it creates the Secret itself, so the
-            # operator reads the sign-in details from the cluster either way.
-            initial-passwords: |
-              {{ node_controller_ui_admin_username }}: {{ node_controller_ui_admin_password }}
-              {{ node_controller_ui_viewer_username }}: {{ node_controller_ui_viewer_password }}
       when:
         - node_controller_ui_enabled | bool
         - node_controller_ui_auth_enabled | bool
