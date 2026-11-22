@@ -53,3 +53,51 @@
                   topologyKey: kubernetes.io/hostname
   tags:
     - ingress-controller
+
+# The controller is installed, not ready: kubernetes.core.helm returns when the
+# objects exist, and its admission webhook starts answering a few seconds later.
+# Anything installed after this role that ships an Ingress (the nodescale page is
+# one) is validated by that webhook, so a release created in the same play was
+# rolled back with "failed calling webhook ... connect: connection refused".
+- name: "Wait for the ingress controller deployment to be ready"
+  kubernetes.core.k8s_info:
+    kubeconfig: "/etc/kubernetes/admin.conf"
+    kind: Deployment
+    namespace: ingress-nginx
+    name: ingress-nginx-controller
+  register: ingress_controller_deploy
+  until: (ingress_controller_deploy.resources | length) > 0 and
+         ((ingress_controller_deploy.resources[0].status.readyReplicas | default(0)) | int) >= 2
+  retries: 60
+  delay: 5
+  changed_when: false
+
+# Ready pods are still not the same as an answering webhook: the probe is an
+# Ingress dry-run, which the API server sends to the very webhook that rejected
+# the nodescale release.
+- name: "Wait for the ingress admission webhook to accept an Ingress"
+  ansible.builtin.command:
+    argv: [kubectl, --kubeconfig, /etc/kubernetes/admin.conf, apply, --dry-run=server, -f, -]
+    stdin: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: ingress-webhook-ready
+        namespace: default
+      spec:
+        rules:
+          - http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: kubernetes
+                      port:
+                        number: 443
+  register: ingress_webhook_probe
+  until: ingress_webhook_probe.rc == 0
+  retries: 60
+  delay: 5
+  changed_when: false
+  failed_when: false
