@@ -6,28 +6,23 @@
     dest: "{{ item.source }}/.rsync-filter"
   when: item.excludes is defined
 
-- name: "Generate find commands and put them into facts"
-  ansible.builtin.set_fact:
-    src_find_files: "{{ lookup('ansible.builtin.template', 'src_find_files.j2') }}"
-    dest_find_files: "{{ lookup('ansible.builtin.template', 'dest_find_files.j2') }}"
-    src_find_dirs: "{{ lookup('ansible.builtin.template', 'src_find_dirs.j2') }}"
-    dest_find_dirs: "{{ lookup('ansible.builtin.template', 'dest_find_dirs.j2') }}"
-
-- name: "Show find commands"
-  ansible.builtin.debug:
-    msg: |
-      Command to get the source files number: {{ src_find_files }}
-      Command to get the destination files number: {{ dest_find_files }}
-      Command to get the source directories number: {{ src_find_dirs }}
-      Command to get the destination directories number: {{ dest_find_dirs }}
-
-- name: "Get source directory files count"
-  ansible.builtin.shell: "{{ src_find_files }}"
-  register: source_files
-
-- name: "Get source directory sub-directories count"
-  ansible.builtin.shell: "{{ src_find_dirs }}"
-  register: source_directories
+# The copy runs on a live guest: journald, cloud-init, apt and containerd write
+# into the source while rsync works, so comparing counts taken before and after
+# the copy fails on entries the copy was never asked to carry. Instead the exact
+# set of paths that existed before the copy is recorded, and only those are
+# verified afterwards. An entry created later is not in the snapshot and cannot
+# fail the check; an entry deleted later no longer exists in the source and is
+# skipped; a path that was there before the copy, is still there, and did not
+# arrive at the destination is a real shortfall and is reported by name.
+- name: "Snapshot the source tree before the copy"
+  ansible.builtin.shell: >
+    cd {{ item.source }} &&
+    find . -mindepth 1
+    {% for excl in item.excludes | default([]) %} ! -path '.{{ excl }}*' {% endfor %}
+    | sort > /tmp/move_system_dir-{{ item.dest | basename }}.src
+  register: source_snapshot
+  changed_when: false
+  become: true
 
 - name: "Remove lost+found directory from the destination dir if it is present"
   ansible.builtin.file:
@@ -53,33 +48,38 @@
   when: item.excludes is defined
   become: true
 
-- name: "Get destination directory files count"
-  ansible.builtin.shell: "{{ dest_find_files }}"
-  register: dest_files
+- name: "List the snapshot paths that did not arrive at the destination"
+  ansible.builtin.shell: |
+    cd {{ item.dest }}
+    find . -mindepth 1 | sort > /tmp/move_system_dir-{{ item.dest | basename }}.dst
+    comm -23 /tmp/move_system_dir-{{ item.dest | basename }}.src \
+             /tmp/move_system_dir-{{ item.dest | basename }}.dst |
+      while read -r path; do
+        [ -e "{{ item.source }}/$path" ] && echo "$path"
+      done
+  register: missing_paths
+  changed_when: false
+  become: true
 
-- name: "Get destination directory sub-directories count"
-  ansible.builtin.shell: "{{ dest_find_dirs }}"
-  register: dest_directories
-
-- name: "Success message"
-  ansible.builtin.debug:
-    msg: |
-      Destination files number and sub-directories number are greater or equal the source corresponding measurements. It seems everything is OK.
-      Source files number is {{ source_files.stdout.split()[0] | int }} - Destination files number is {{ dest_files.stdout.split()[0] | int }}
-      Source sub-directories number is {{ source_directories.stdout.split()[0] | int }} - Destination sub-directories number is {{ dest_directories.stdout.split()[0] | int }}
-  when:
-    - ( dest_files.stdout.split()[0] | int ) >= ( source_files.stdout.split()[0] | int )
-    - ( dest_directories.stdout.split()[0] | int ) >= ( source_directories.stdout.split()[0] | int )
-
-- name: "Fail if synchronization is incomplete"
+- name: "Fail if a path that still exists in the source is missing at the destination"
   ansible.builtin.fail:
     msg: |
-      CRITICAL: Data synchronization incomplete for {{ item.source }} -> {{ item.dest }}!
-      Source files: {{ source_files.stdout.split()[0] | int }} vs Destination files: {{ dest_files.stdout.split()[0] | int }}
-      Source dirs: {{ source_directories.stdout.split()[0] | int }} vs Destination dirs: {{ dest_directories.stdout.split()[0] | int }}
-  when:
-    - ( dest_files.stdout.split()[0] | int ) < ( source_files.stdout.split()[0] | int ) or
-      ( dest_directories.stdout.split()[0] | int ) < ( source_directories.stdout.split()[0] | int )
+      CRITICAL: {{ missing_paths.stdout_lines | length }} path(s) exist in {{ item.source }} and are missing at {{ item.dest }}:
+      {{ missing_paths.stdout_lines | join('\n') }}
+  when: missing_paths.stdout_lines | length > 0
+
+- name: "Copy result"
+  ansible.builtin.debug:
+    msg: "{{ source_snapshot.stdout_lines | length }} path(s) from the snapshot are present at {{ item.dest }}."
+  when: missing_paths.stdout_lines | length == 0
+
+- name: "Remove the snapshot lists"
+  ansible.builtin.file:
+    path: "/tmp/move_system_dir-{{ item.dest | basename }}.{{ suffix }}"
+    state: absent
+  loop: [src, dst]
+  loop_control:
+    loop_var: suffix
 
 - name: "Collect ansible facts"
   ansible.builtin.setup:
